@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from '../utils/Supabase';
 import Loader from "../components/Loader";
-import NetworkError from "../components/NetworkError";
+import NetworkError from "../components/NetWorkError";
 import { logout } from "../utils/auth";
 import { useAuth } from "../Context/authContext";
 
