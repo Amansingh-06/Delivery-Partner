@@ -280,6 +280,8 @@ const Login = () => {
                         onInput={(e) => {
                             e.target.value = e.target.value.replace(/[^0-9]/g, "");
                         }}
+                        style={{ border: '1px solid #808080' }}
+
                         className={`w-full rounded-r-lg p-3 text-slate-700border text-lg mb-2 placeholder-gray-400 focus:outline-none transition duration-300 focus:ring-2
                             ${errors.phoneNumber
                                 ? "border-red-500 focus:ring-red-500"
