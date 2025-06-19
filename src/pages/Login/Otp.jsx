@@ -384,17 +384,15 @@ const Otp = () => {
                     <button
                         type="submit"
                         name="defaultSignup"
-                        className={` ${isLogin
-                                ? "opacity-0 pointer-events-none "
-                                : `${!(isValid && otp?.length === 6)
-                                    ? "bg-orange-200 cursor-not-allowed text-white z-50"
-                                    : "bg-orange hover:bg-orange/90 cursor-pointer hover:scale-95 transition duration-300 z-50"
-                                } `
-                            }  flex items-center justify-center gap-2 md:gap-3 w-full lg:w-[200px] text-white py-3   rounded-xl  font-semibold transition duration-300 shadow-lg`}
+                        className={`flex items-center justify-center gap-2 md:gap-3 w-full lg:w-[200px] text-white py-3 rounded-xl font-semibold transition duration-300 shadow-lg z-50
+    ${!isValid || otp?.length !== 6
+                                ? "bg-orange-200 cursor-not-allowed"
+                                : "bg-orange hover:bg-orange/90 cursor-pointer hover:scale-95"
+                            }`}
                         disabled={authenticating}
-                                            >
+                    >
                         {isLogin ? "Login" : "Sign Up"}
-                        <FaArrowRight className=" text-lg md:text-xl" />
+                        <FaArrowRight className="text-lg md:text-xl" />
                     </button>
                 </div>
             </form>
