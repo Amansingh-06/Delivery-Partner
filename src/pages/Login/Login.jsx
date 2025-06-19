@@ -164,13 +164,13 @@ const Login = () => {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row items-center min-h-screen h-full bg-white">
+        <div className="flex flex-col lg:flex-row items-center min-h-screen h-full bg-white overflow-hidden">
             {/* Image */}
             <div className="w-full lg:w-[68%] overflow-hidden">
                 <img
                     src={LoginBGimage}
                     alt="Login Visual"
-                    className="object-cover w-full h-[60vh] lg:h-screen"
+                    className="object-cover w-full h-[68vh] lg:h-screen"
                 />
             </div>
 

@@ -229,7 +229,7 @@ const Otp = () => {
                 id="otp-form"
                 className="relative p-4 lg:p-10 w-full lg:w-[34%] rounded-t-3xl lg:rounded-none flex flex-col items-start justify-start md:justify-center ml-0 lg:-ml-5 bg-white overflow-y-auto min-h-[52vh] lg:h-screen -mt-5 lg:mt-0"
             >
-                <div className="flex items-center justify-center mb-3 lg:mb-4 text-sm lg:text-lg font-medium text-gray ">
+                <div className="flex items-center justify-center mb-3 lg:mb-4 text-sm lg:text-lg font-medium text-slate-700 ">
                     {phone && (
                         <>
                             OTP sent to&nbsp;{phone}
@@ -359,7 +359,7 @@ const Otp = () => {
                 </div>
                 <ResendButton fullPhone={phone} setIsResending={setIsResending} />
 
-                <div className="flex w-full items-center justify-between mt-6">
+                <div className="flex w-full items-center justify-end mt-6">
                     {/* Submit Button */}
 
                     {/* {

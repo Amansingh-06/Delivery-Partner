@@ -194,17 +194,38 @@ const Registration = () => {
                                 onKeyDown={nameKeyDownHandler}
                             />
 
-                            <InputField
+<InputField
                                 icon={BsCalendar2Date}
                                 id="dob"
-                                type='date'
+                                type="date"
                                 placeholder="Date of Birth"
+                                name="dob"
                                 register={register}
-                                onFocus={(e) => e.target.showPicker?.()} // opens calendar on every click
-                                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}  // 🔥 This is the key
-                                validation={{ required: 'Date of Birth is required' }}
+                                validation={{
+                                    required: 'Date of Birth is required',
+                                    validate: (value) => {
+                                        const dob = new Date(value);
+                                        const today = new Date();
+                                        const age = today.getFullYear() - dob.getFullYear();
+                                        const isBeforeBirthday =
+                                            today.getMonth() < dob.getMonth() ||
+                                            (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate());
+                                        const actualAge = isBeforeBirthday ? age - 1 : age;
+
+                                        // ✅ Also check if dob is before 1900
+                                        const minValidDate = new Date("1900-01-01");
+                                        if (dob < minValidDate) return "Date cannot be before 1900";
+
+                                        return actualAge >= 18 || "You must be at least 18 years old";
+                                    }
+                                }}
+                                min="1900-01-01"  // 🔥 restricts calendar and manual input
+                                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                                onFocus={(e) => e.target.showPicker?.()} // calendar opens on click
                                 error={errors.dob}
                             />
+
+
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <InputField
@@ -265,7 +286,7 @@ const Registration = () => {
 
                                 <div className="flex flex-col gap-8 w-full">
                                     {/* === Upload Photo === */}
-                                    <label className="block -mb-1 mt-4 font-medium text-gray-700">Upload Photo</label>
+                                    <label className="block -mb-1 mt-4 font-semibold text-gray-500">Upload Photo</label>
                                     <div className="flex md:gap-8 gap-3 flex-col md:flex-row w-full h-40">
 
                                         {/* Photo Preview */}
@@ -340,7 +361,7 @@ const Registration = () => {
 
                                     {/* === Upload ID === */}
                                     <div>
-                                        <label className="block mt-2 mb-4 text-base font-medium text-gray-500">
+                                        <label className="block mt-2 mb-4 text-base font-semibold text-gray-500">
                                             Add at least two IDs <span className='text-sm text-gray-400'>(e.g., Aadhaar Card, Driving License, PAN)</span>
                                         </label>
                                         <div className="flex items-center md:flex-row flex-col md:gap-8 gap-2 w-full">
@@ -369,16 +390,17 @@ const Registration = () => {
                                                             accept="image/*,.pdf"
                                                             className="hidden"
                                                             onChange={(e) => {
-                                                                const files = Array.from(e.target.files);
-                                                                if (files.length > 0) {
-                                                                    setIdFileName(files.map((file) => file.name).join(', '));
-                                                                    setIdFile(files);
-                                                                    field.onChange(files); // ✅ Pass array to RHF
-                                                                } else {
-                                                                    setIdFileName('');
-                                                                    setIdFile([]);
-                                                                    field.onChange([]);
-                                                                }
+                                                                const newFiles = Array.from(e.target.files);
+
+                                                                // ✅ Merge new files with old ones (avoid duplicates)
+                                                                const updatedFiles = [...idFile, ...newFiles].filter(
+                                                                    (file, index, self) =>
+                                                                        index === self.findIndex(f => f.name === file.name && f.lastModified === file.lastModified)
+                                                                );
+
+                                                                setIdFile(updatedFiles);
+                                                                setIdFileName(updatedFiles.map((file) => file.name).join(', '));
+                                                                field.onChange(updatedFiles); // update RHF
                                                             }}
                                                         />
                                                     </>
@@ -386,14 +408,16 @@ const Registration = () => {
                                             />
 
 
-                                            <button
-                                                type="button"
+
+<button
+    type="button"
                                                 onClick={() => document.getElementById('id').click()}
                                                 className={`md:flex-1 w-full ${idFile?.length > 0 ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-600 hover:bg-green-700'
                                                     } text-white font-semibold px-4 py-2 rounded transition select-none`}
                                             >
                                                 {idFile?.length > 0 ? `${idFile.length} ID(s) Selected` : 'Select ID(s)'}
                                             </button>
+
                                         </div>
                                         {errors.id && <p className="text-red-500 text-sm mt-1">{errors.id.message}</p>}                                    </div>
                                 </div>
