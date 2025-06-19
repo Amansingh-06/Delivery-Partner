@@ -40,29 +40,28 @@ const Registration = () => {
         setValue,
         handleSubmit,
         control,
-        formState: { errors,isValid },
+        formState: { errors, isValid },
         trigger
-    } = useForm({ mode: 'onChange' });;
+    } = useForm({ mode: 'onChange' });
 
     const [photoPreview, setPhotoPreview] = useState(null);
     const [idFileName, setIdFileName] = useState('');
-    const [idFile,setIdFile]=useState(null)
-    const [loading, setLoading] = useState(false)
+    const [idFile, setIdFile] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [photoSelected, setPhotoSelected] = useState(false);
-    
-    console.log(idFileName)
-    const { session } = useAuth(); 
+
+    const { session } = useAuth();
+    const navigate = useNavigate();
+
     const formattedPhone = session.user.phone.startsWith('+')
         ? session.user.phone
         : `+${session.user.phone}`;
 
-const navigate = useNavigate()
     const uploadFile = async (file, bucketName) => {
         if (!file) return null;
 
         const fileExt = file?.name?.split('.')?.pop();
-        const filePath = `${Date.now()}.${fileExt}`;
-
+        const filePath = `${Date.now()}_${file.name}`;
 
         const { data, error } = await supabase.storage
             .from(bucketName)
@@ -74,7 +73,7 @@ const navigate = useNavigate()
         if (error) {
             console.error('Error uploading file:', error?.message);
             toast.error("Error uploading file");
-            throw new Error(error?.message); // Throw error to stop further processing
+            throw new Error(error?.message);
         }
 
         const { data: urlData, error: urlError } = supabase.storage
@@ -83,93 +82,94 @@ const navigate = useNavigate()
 
         if (urlError) {
             console.error('Error getting public URL:', urlError?.message);
-            throw new Error(urlError?.message); // Throw error to stop further processing
+            throw new Error(urlError?.message);
         }
 
         return urlData?.publicUrl;
     };
 
-    console.log("session", session)
-    console.log()
     const onSubmit = async (data) => {
-        console.log(data)
-        setLoading(true)
+        setLoading(true);
+
         try {
-            // Step 1: Upload files
             const photoFile = data?.photo;
-            console.log("photoFile", photoFile)
-            console.log("IdFile",idFile)
-            
 
-            const photoUrl = await uploadFile(photoFile, 'dp-photo'); // replace with your actual bucket
-            const idUrl = await uploadFile(idFile, 'dp-id');
+            // ✅ Step 1: Upload photo
+            const photoUrl = await uploadFile(photoFile, 'dp-photo');
 
-            console.log("photoUrl",photoUrl)
+            // ✅ Step 2: Upload all selected ID files
+            const idUrls = [];
 
-            // Step 2: Insert into Supabase table
+            for (const file of idFile) {
+                const url = await uploadFile(file, 'dp-id');
+                if (url) idUrls.push(url);
+            }
+
+            // ✅ Validation: At least 2 IDs required
+            if (idUrls.length < 2) {
+                toast.error("Please upload at least 2 ID documents");
+                setLoading(false);
+                return;
+            }
+
+            // ✅ Step 3: Insert into Supabase
             const { error: insertError } = await supabase
                 .from('delivery_partner')
-                .insert([
-                    {
-                        
-                        name: data.name,
-                        dob: data.dob,
-                        city: data.city,
-                        street: data.Street,
-                        state: data.state,
-                        pincode: data.pincode,
-                        photo_url: photoUrl,
-                        id_url: idUrl,
-                        created_ts: new Date().toISOString(),
-                        mobile_no: formattedPhone,
-                        u_id:session?.user?.id
-                    
-                    }
-                ]);
+                .insert([{
+                    name: data.name,
+                    dob: data.dob,
+                    city: data.city,
+                    street: data.Street,
+                    state: data.state,
+                    pincode: data.pincode,
+                    photo_url: photoUrl,
+                    id_url: idUrls, // ✅ Pass array directly
+                    created_ts: new Date().toISOString(),
+                    mobile_no: formattedPhone,
+                    u_id: session?.user?.id
+                }]);
 
             if (insertError) {
-                setLoading(false)
                 console.error('Error inserting data:', insertError);
                 toast.error("Failed to register");
+                setLoading(false);
                 return;
             }
 
             toast.success("Registration successful!");
-            // 👇 Register the user
+
+            // ✅ Step 4: Update User Metadata
             const { data: updatedUser, error: updateError } = await supabase.auth.updateUser({
                 data: { isRegistered: true },
             });
 
             if (updateError) {
                 toast.error("User metadata update failed");
+                setLoading(false);
                 return;
             }
 
-            // 👇 Fetch fresh session
+            // ✅ Step 5: Refresh session & Navigate
             const { data: sessionData } = await supabase.auth.getSession();
             if (sessionData?.session?.user?.user_metadata?.isRegistered) {
-                console.log(sessionData)
-                console.log("register", sessionData?.session?.user?.user_metadata?.isRegistered)
-                // setSession(data.session); // context
                 navigate("/home");
             } else {
                 toast.error("User session not updated with registration info");
             }
 
-            setLoading(false)
+            setLoading(false);
         } catch (error) {
             console.error("Registration failed:", error.message);
             toast.error("Something went wrong");
+            setLoading(false);
         }
     };
     
 
- 
-
     const removePhotoPreview = () => {
         setPhotoPreview(null);
-        setValue('photo', null); // this resets the actual input value
-        trigger('photo'); // re-validate the field
+        setValue('photo', null);
+        trigger('photo');
     };
     
 
@@ -347,28 +347,35 @@ const navigate = useNavigate()
                                                     {idFileName || 'No ID Selected'}
                                                 </span>
                                             </div>
-
                                             <Controller
                                                 name="id"
                                                 control={control}
-                                                rules={{ required: 'ID is required' }}
+                                                rules={{
+                                                    validate: (files) => {
+                                                        if (!files || files.length < 2) {
+                                                            return 'Please upload at least 2 ID files';
+                                                        }
+                                                        return true;
+                                                    },
+                                                }}
                                                 render={({ field }) => (
                                                     <>
                                                         <input
                                                             id="id"
                                                             type="file"
+                                                            multiple
                                                             accept="image/*,.pdf"
                                                             className="hidden"
                                                             onChange={(e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if (file) {
-                                                                    setIdFileName(file.name);
-                                                                    setIdFile(file);
-                                                                    field.onChange(file); // ✅ Very Important: send to react-hook-form
+                                                                const files = Array.from(e.target.files);
+                                                                if (files.length > 0) {
+                                                                    setIdFileName(files.map((file) => file.name).join(', '));
+                                                                    setIdFile(files);
+                                                                    field.onChange(files); // ✅ Pass array to RHF
                                                                 } else {
                                                                     setIdFileName('');
-                                                                    setIdFile(null);
-                                                                    field.onChange(null); // ❌ Reset if canceled
+                                                                    setIdFile([]);
+                                                                    field.onChange([]);
                                                                 }
                                                             }}
                                                         />
@@ -380,13 +387,13 @@ const navigate = useNavigate()
                                             <button
                                                 type="button"
                                                 onClick={() => document.getElementById('id').click()}
-                                                className={`md:flex-1 w-full ${idFile ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-600 hover:bg-green-700'} text-white font-semibold px-4 py-2 rounded transition select-none`}
+                                                className={`md:flex-1 w-full ${idFile?.length > 0 ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-600 hover:bg-green-700'
+                                                    } text-white font-semibold px-4 py-2 rounded transition select-none`}
                                             >
-                                                {idFile ? 'ID Selected' : 'Select ID'}
+                                                {idFile?.length > 0 ? `${idFile.length} ID(s) Selected` : 'Select ID(s)'}
                                             </button>
                                         </div>
-                                        {errors.id && <p className="text-red-500 text-sm mt-1">{errors.id.message}</p>}
-                                    </div>
+                                        {errors.id && <p className="text-red-500 text-sm mt-1">{errors.id.message}</p>}                                    </div>
                                 </div>
 
 

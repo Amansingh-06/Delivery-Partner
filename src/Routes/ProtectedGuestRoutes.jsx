@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "../utils/Supabase";
 import { useAuth } from "../Context/authContext";
 import Loader from "../components/Loader";
-import NetworkError from "../components/NetworkError";
+import NetworkError from "../components/NetWorkError";
 
 const ProtectedGuestRoute = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);

@@ -13,14 +13,11 @@ export default function DpProfile() {
     const [loading, setLoading] = useState(false);
     const [initialState, setInitialState] = useState(null);
     const [photoUrl, setPhotoUrl] = useState('');
-    const [idUrl, setIdUrl] = useState('');
+    const [idUrls, setIdUrls] = useState([]); // ✅ array of URLs
     const [photoFile, setPhotoFile] = useState(null);
-    const [idFile, setIdFile] = useState(null);
+    const [idFiles, setIdFiles] = useState([]); // ✅ array of files
 
-    const { session, dpProfile } = useAuth(); // ✅ session from context
-    console.log("🔥 Session:", session);
-    console.log("🔥 dpProfile:", dpProfile);
-
+    const { session, dpProfile } = useAuth();
     const photoInputRef = useRef(null);
     const idInputRef = useRef(null);
 
@@ -32,14 +29,13 @@ export default function DpProfile() {
         setValue,
         formState: { errors }
     } = useForm({ mode: 'onChange' });
+
     const navigate = useNavigate();
     const fields = watch();
-    console.log("👀 Form Fields:", fields);
 
     const isChanged = useMemo(() => {
         if (!initialState) return false;
-
-        const result = (
+        return (
             fields.name !== initialState.name ||
             fields.dob !== initialState.dob ||
             fields.street !== initialState.street ||
@@ -47,45 +43,60 @@ export default function DpProfile() {
             fields.city !== initialState.city ||
             fields.pincode !== initialState.pincode ||
             photoUrl !== initialState.photo_url ||
-            idUrl !== initialState.id_url
+            JSON.stringify(idUrls) !== JSON.stringify(initialState.id_url)
         );
-        console.log("🔁 isChanged:", result);
-        return result;
-    }, [fields, photoUrl, idUrl, initialState]);
+    }, [fields, photoUrl, idUrls, initialState]);
 
-    const handleFileChange = (e, setUrl, setFile) => {
-        const file = e.target.files[0];
-        console.log("📂 Selected File:", file);
-        if (!file) return;
-        setUrl(URL.createObjectURL(file));
-        setFile(file);
+    const handleFileChange = (e, setUrl, setFile, isMultiple = false, replace = false) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const fileData = files.map(file => ({
+            url: URL.createObjectURL(file),
+            type: file.type, // like "application/pdf" or "image/png"
+            name: file.name,
+        }));
+
+        if (isMultiple) {
+            if (replace) {
+                setUrl(fileData);
+                setFile(files);
+            } else {
+                setUrl(prev => [...prev, ...fileData]);
+                setFile(prev => [...prev, ...files]);
+            }
+        } else {
+            const file = files[0];
+            setUrl({
+                url: URL.createObjectURL(file),
+                type: file.type,
+                name: file.name,
+            });
+            setFile(file);
+        }
     };
+    
+    
+    
+    
 
     const uploadFile = async (file, bucket) => {
-        if (!file) return null;
         const ext = file.name.split('.').pop();
-        const filePath = `${Date.now()}.${ext}`;
-        console.log(`📤 Uploading ${file.name} to bucket '${bucket}' as '${filePath}'`);
+        const filePath = `${Date.now()}-${file.name}`;
 
         const { data, error } = await supabase.storage
             .from(bucket)
             .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
-        if (error) {
-            console.error("❌ Upload Error:", error);
-            toast.error('Upload failed');
-            throw new Error(error.message);
-        }
+        if (error) throw new Error(error.message);
 
         const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
-        console.log("✅ Uploaded File URL:", urlData.publicUrl);
         return urlData.publicUrl;
     };
 
     useEffect(() => {
         async function fetchData() {
             if (!session?.user?.id) return;
-            console.log("📡 Fetching delivery_partner data for u_id:", session.user.id);
             setLoading(true);
 
             const { data, error } = await supabase
@@ -95,7 +106,7 @@ export default function DpProfile() {
                 .single();
 
             if (data) {
-                console.log("✅ Fetched Data:", data);
+                console.log("dpData",data)
                 reset({
                     name: data.name || '',
                     dob: data.dob || '',
@@ -105,7 +116,7 @@ export default function DpProfile() {
                     state: data.state || '',
                 });
                 setPhotoUrl(data.photo_url || '');
-                setIdUrl(data.id_url || '');
+                setIdUrls(data.id_url || []);
 
                 setInitialState({
                     name: data.name || '',
@@ -115,25 +126,28 @@ export default function DpProfile() {
                     city: data.city || '',
                     state: data.state || '',
                     photo_url: data.photo_url || '',
-                    id_url: data.id_url || ''
+                    id_url: data.id_url || []
                 });
             }
-
             if (error) console.error('❌ Fetch error:', error.message);
             setLoading(false);
         }
-
         fetchData();
     }, [session?.user?.id, reset]);
 
     const onSubmit = async (formData) => {
-        console.log("🚀 Form submitted with data:", formData);
         setLoading(true);
         try {
             const uploadedPhoto = photoFile ? await uploadFile(photoFile, 'dp-photo') : photoUrl;
-            const uploadedId = idFile ? await uploadFile(idFile, 'dp-id') : idUrl;
-            console.log("📸 Final Uploaded Photo URL:", uploadedPhoto);
-            console.log("🆔 Final Uploaded ID URL:", uploadedId);
+
+            const uploadedIdUrls = [...idUrls];
+            if (idFiles.length > 0) {
+                uploadedIdUrls.length = 0; // clear existing if uploading new
+                for (const file of idFiles) {
+                    const url = await uploadFile(file, 'dp-id');
+                    uploadedIdUrls.push(url);
+                }
+            }
 
             const payload = {
                 u_id: session?.user?.id,
@@ -145,9 +159,8 @@ export default function DpProfile() {
                 city: formData.city,
                 state: formData.state,
                 photo_url: uploadedPhoto,
-                id_url: uploadedId
+                id_url: uploadedIdUrls
             };
-            console.log("📦 Final Payload for upsert:", payload);
 
             const { error } = await supabase
                 .from('delivery_partner')
@@ -155,21 +168,17 @@ export default function DpProfile() {
 
             if (error) {
                 toast.error('Update failed');
-                console.log("❌ Supabase Error:", error);
-                console.log("📋 Error Details:", error.details);
-                console.log("📋 Error Message:", error.message);
+                console.error("Supabase error:", error);
             } else {
                 toast.success('Profile updated');
-                console.log("✅ Profile updated successfully");
                 navigate('/home');
             }
         } catch (err) {
-            console.error("❌ Upload failed:", err.message);
             toast.error('Upload failed');
+            console.error("Upload error:", err.message);
         }
         setLoading(false);
     };
-
 
     return (
         <div className='max-w-2xl mx-auto mb-10 p'>
@@ -200,7 +209,7 @@ export default function DpProfile() {
                             type="date"
                             {...register('dob', { required: 'Date of birth is required' })}
                             onFocus={(e) => e.target.showPicker?.()} // opens calendar on every click
-                            max={new Date().toISOString().split('T')[0]} // disables future dates
+                            max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}  // 🔥 This is the key
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring focus:ring-indigo-200 outline-none"
                         />
 
@@ -260,71 +269,96 @@ export default function DpProfile() {
                         {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode.message}</p>}
                     </div>
 
-                    {/* Upload Photo */}
-                    <div>
-                        <label className="block text-gray-700 font-medium mb-1">Upload Photo</label>
-                        {photoUrl && (
-                            <img
-                                src={photoUrl}
-                                alt="Photo"
-                                className="w-28 h-28 object-cover rounded-full mb-2 border shadow-sm"
-                            />
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => photoInputRef.current.click()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition"
-                        >
-                            Select Photo
-                        </button>
-                        <input
-                            type="file"
-                            hidden
-                            ref={photoInputRef}
-                            onChange={(e) => handleFileChange(e, setPhotoUrl, setPhotoFile)}
-                        />
-                    </div>
-
-                    {/* Upload ID Proof */}
-                    <div>
-                        <label className="block text-gray-700 font-medium mb-1">Upload ID Proof</label>
-
-                        {idUrl && (
-                            idUrl.endsWith('.pdf') ? (
-                                <div className="p-4 border border-gray-300 rounded-md bg-gray-50 shadow-sm mb-2">
-                                    <p className="text-sm text-gray-600 mb-1 font-medium">PDF Uploaded</p>
-                                    <a
-                                        href={idUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-indigo-600 underline hover:text-indigo-800 text-sm"
-                                    >
-                                        🔗 View PDF
-                                    </a>
-                                </div>
-                            ) : (
+                    {/* Upload Photo & ID Proof section */}
+                    <div className="flex flex-col md:flex-row md:items-start md:gap-8">
+                        {/* Upload Photo */}
+                        <div className="mb-6 md:mb-0 md:w-1/3">
+                            <label className="block text-gray-700 font-medium mb-2">Upload Photo</label>
+                            {photoUrl && (
                                 <img
-                                    src={idUrl}
-                                    alt="ID Proof"
-                                    className="w-28 h-28 object-cover rounded-md mb-2 border shadow"
+                                    src={photoUrl}
+                                    alt="Photo"
+                                    className="w-28 h-28 object-cover rounded-full mb-2 border shadow-sm"
                                 />
-                            )
-                        )}
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => photoInputRef.current.click()}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 mt-2 rounded-md transition"
+                            >
+                                Select Photo
+                            </button>
+                            <input
+                                type="file"
+                                hidden
+                                ref={photoInputRef}
+                                onChange={(e) => handleFileChange(e, setPhotoUrl, setPhotoFile)}
+                            />
+                        </div>
 
-                        <button
-                            type="button"
-                            onClick={() => idInputRef.current.click()}
-                            className="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-md transition"
-                        >
-                            Select ID Proof
-                        </button>
-                        <input
-                            type="file"
-                            hidden
-                            ref={idInputRef}
-                            onChange={(e) => handleFileChange(e, setIdUrl, setIdFile)}
-                        />
+                        {/* Upload ID Proof */}
+                        <div className="md:w-2/3">
+                            <label className="block text-gray-700 font-medium mb-2">Upload ID Proof</label>
+
+                            {/* ID Previews */}
+                            {Array.isArray(idUrls) && idUrls.length > 0 && (
+                                <div className="flex flex-wrap gap-4 mb-4">
+                                    {idUrls.map((file, index) => {
+                                        // If it's object (from new uploads), use type; if string (from backend), check extension
+                                        const fileUrl = typeof file === "string" ? file : file.url;
+                                        const fileType = typeof file === "string"
+                                            ? (file.endsWith(".pdf") ? "application/pdf" : "image")
+                                            : file.type;
+
+                                        const isPDF = fileType === "application/pdf";
+
+                                        return isPDF ? (
+                                            <div
+                                                key={index}
+                                                className="w-28 h-28 p-3 border border-gray-300 rounded-md bg-gray-50 shadow-sm"
+                                            >
+                                                <p className="text-sm text-gray-600 font-medium mb-2">PDF Uploaded</p>
+                                                <a
+                                                    href={fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-indigo-600 underline hover:text-indigo-800 text-sm"
+                                                >
+                                                    🔗 View PDF
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <img
+                                                key={index}
+                                                src={fileUrl}
+                                                alt={`ID Proof ${index + 1}`}
+                                                className="w-28 h-28 object-cover rounded-md border shadow"
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+
+                            {/* Upload Button */}
+                            <button
+                                type="button"
+                                onClick={() => idInputRef.current.click()}
+                                className="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-md transition"
+                            >
+                                Select ID Proof
+                            </button>
+                            <input
+                                type="file"
+                                hidden
+                                multiple
+                                ref={idInputRef}
+                                onChange={(e) => handleFileChange(e, setIdUrls, setIdFiles, true, true)}
+                            />
+                        </div>
                     </div>
+
+
 
                     {/* Save Button */}
                     <button

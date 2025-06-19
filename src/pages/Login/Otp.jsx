@@ -217,7 +217,7 @@ const Otp = () => {
                 <img
                     src={LoginBGimage}
                     alt="Login Visual"
-                    className="object-cover w-full h-[40vh] lg:h-screen"
+                    className="object-cover w-full h-[39vh] lg:h-screen"
                 />
                 <Link to="/" className="absolute text-orange bg-white rounded-full p-3 text-3xl lg:text-3xl font-bold top-4 lg:top-5 left-1 lg:left-4 z-20"><FiArrowLeft /></Link>
             </div>
@@ -227,7 +227,7 @@ const Otp = () => {
                 onSubmit={handleSubmit(onSubmit)}
                 autoComplete="off"
                 id="otp-form"
-                className="relative p-4 lg:p-10 w-full lg:w-[34%] rounded-t-3xl lg:rounded-none flex flex-col items-start justify-center ml-0 lg:-ml-5 bg-white overflow-y-auto max-h-[66vh] lg:max-h-none lg:min-h-[66vh] -mt-5 lg:mt-0"
+                className="relative p-4 lg:p-10 w-full lg:w-[34%] rounded-t-3xl lg:rounded-none flex flex-col items-start justify-start md:justify-center ml-0 lg:-ml-5 bg-white overflow-y-auto min-h-[52vh] lg:h-screen -mt-5 lg:mt-0"
             >
                 <div className="flex items-center justify-center mb-3 lg:mb-4 text-sm lg:text-lg font-medium text-gray ">
                     {phone && (
@@ -314,7 +314,7 @@ const Otp = () => {
                 )} */}
 
                 {/* OTP Input */}
-                <div className="space-y-2 text-gray mt-4">
+                <div className="space-y-2 text-slate-700 mt-4">
                     <label className="text-base font-medium ">Enter OTP</label>
                     <OTPInput
                         value={otp}
@@ -335,8 +335,8 @@ const Otp = () => {
                             width: "14%",
                             height: "60px",
                             textAlign: "center",
-                            borderBottom: `2px solid ${otp.length === 6 ? "green" : "#d1d5db"
-                                }`,
+                            borderBottom: `1px solid ${otp.length === 6 ? "green" : "#334155"
+                            }`,
                             outline: "none",
                             backgroundColor: "#ffffff",
                             color: "#374151",
@@ -384,14 +384,20 @@ const Otp = () => {
                     <button
                         type="submit"
                         name="defaultSignup"
-                        className={`${!(isValid && otpValue?.length === 6)
-
-                            ? "bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed opacity-70"
-                            : "cursor-pointer bg-grey-100 text-gray hover:text-white hover:bg-orange/90 hover:scale-95 transition duration-300"
-                            } flex items-center justify-center gap-2 md:gap-3 w-full lg:w-[120px]  py-3  border-orange border-2   rounded-xl  font-semibold transition duration-300 shadow-lg
-            `}
+                        className={`
+                            flex items-center justify-center gap-2 md:gap-3 w-full lg:w-[120px] py-3 border-orange-300 border-2 rounded-xl font-semibold shadow-lg transition duration-300
+                            ${isLogin
+                                ? !(isValid && otp?.length === 6)
+                                    ? "bg-orange-200 cursor-not-allowed text-white z-50"
+                                    : "bg-orange text-white hover:bg-orange/90 hover:scale-95 cursor-pointer"
+                                : !(isValid && otp?.length === 6)
+                                    ? "bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed z-50"
+                                    : "bg-gray-200 text-gray-600 hover:text-white hover:bg-orange/90 hover:scale-95 cursor-pointer"
+                            }
+                            disabled:bg-orange/50 disabled:text-white disabled:cursor-not-allowed disabled:opacity-70
+                          `}
                         disabled={authenticating}
-                    >
+                                            >
                         {isLogin ? "Login" : "Sign Up"}
                         <FaArrowRight className=" text-lg md:text-xl" />
                     </button>
