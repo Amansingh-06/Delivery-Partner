@@ -265,7 +265,7 @@ const Registration = () => {
 
                                 <div className="flex flex-col gap-8 w-full">
                                     {/* === Upload Photo === */}
-                                    <label className="block mb-2 mt-4 font-medium text-gray-700">Upload Photo</label>
+                                    <label className="block -mb-1 mt-4 font-medium text-gray-700">Upload Photo</label>
                                     <div className="flex md:gap-8 gap-3 flex-col md:flex-row w-full h-40">
 
                                         {/* Photo Preview */}
@@ -340,7 +340,9 @@ const Registration = () => {
 
                                     {/* === Upload ID === */}
                                     <div>
-                                        <label className="block mt-4 mb-2 font-medium text-gray-700">Select ID</label>
+                                        <label className="block mt-2 mb-4 text-base font-medium text-gray-500">
+                                            Add at least two IDs <span className='text-sm text-gray-400'>(e.g., Aadhaar Card, Driving License, PAN)</span>
+                                        </label>
                                         <div className="flex items-center md:flex-row flex-col md:gap-8 gap-2 w-full">
                                             <div className="border border-gray-300 rounded px-5 py-2 bg-white w-full md:flex-1 overflow-hidden truncate">
                                                 <span className="text-gray-700 text-sm truncate">

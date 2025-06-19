@@ -384,18 +384,13 @@ const Otp = () => {
                     <button
                         type="submit"
                         name="defaultSignup"
-                        className={`
-                            flex items-center justify-center gap-2 md:gap-3 w-full lg:w-[120px] py-3 border-orange-300 border-2 rounded-xl font-semibold shadow-lg transition duration-300
-                            ${isLogin
-                                ? !(isValid && otp?.length === 6)
+                        className={` ${isLogin
+                                ? "opacity-0 pointer-events-none "
+                                : `${!(isValid && otp?.length === 6)
                                     ? "bg-orange-200 cursor-not-allowed text-white z-50"
-                                    : "bg-orange text-white hover:bg-orange/90 hover:scale-95 cursor-pointer"
-                                : !(isValid && otp?.length === 6)
-                                    ? "bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed z-50"
-                                    : "bg-gray-200 text-gray-600 hover:text-white hover:bg-orange/90 hover:scale-95 cursor-pointer"
-                            }
-                            disabled:bg-orange/50 disabled:text-white disabled:cursor-not-allowed disabled:opacity-70
-                          `}
+                                    : "bg-orange hover:bg-orange/90 cursor-pointer hover:scale-95 transition duration-300 z-50"
+                                } `
+                            }  flex items-center justify-center gap-2 md:gap-3 w-full lg:w-[200px] text-white py-3   rounded-xl  font-semibold transition duration-300 shadow-lg`}
                         disabled={authenticating}
                                             >
                         {isLogin ? "Login" : "Sign Up"}
