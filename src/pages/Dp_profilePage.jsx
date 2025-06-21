@@ -17,7 +17,7 @@ export default function DpProfile() {
     const [photoFile, setPhotoFile] = useState(null);
     const [idFiles, setIdFiles] = useState([]); // ✅ array of files
 
-    const { session, dpProfile } = useAuth();
+    const { session, dpProfile, setdpProfile } = useAuth();
     const photoInputRef = useRef(null);
     const idInputRef = useRef(null);
 
@@ -162,14 +162,18 @@ export default function DpProfile() {
                 id_url: uploadedIdUrls
             };
 
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('delivery_partner')
-                .upsert(payload, { onConflict: 'u_id' });
+                .upsert(payload, { onConflict: 'u_id' })
+                .select()
+                .single(); // ✅ ye updated data return karega
+          
 
             if (error) {
                 toast.error('Update failed');
                 console.error("Supabase error:", error);
             } else {
+                setdpProfile(data);
                 toast.success('Profile updated');
                 navigate('/home');
             }
@@ -276,7 +280,7 @@ export default function DpProfile() {
                             <label className="block text-gray-700 font-medium mb-2">Upload Photo</label>
                             {photoUrl && (
                                 <img
-                                    src={photoUrl}
+                                    src={photoUrl?.url || photoUrl}
                                     alt="Photo"
                                     className="w-28 h-28 object-cover rounded-full mb-2 border shadow-sm"
                                 />
@@ -292,7 +296,7 @@ export default function DpProfile() {
                                 type="file"
                                 hidden
                                 ref={photoInputRef}
-                                onChange={(e) => handleFileChange(e, setPhotoUrl, setPhotoFile)}
+                                onChange={(e) => handleFileChange(e, setPhotoUrl, setPhotoFile,false,true)}
                             />
                         </div>
 

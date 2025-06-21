@@ -10,54 +10,29 @@ export const AuthProvider = ({ children }) => {
     const [vendorData, setVendorData] = useState(null);
     const [dpProfile, setdpProfile] = useState(null);
 
-    useEffect(() => {
+    console.log("Session",session)
+    // ✅ Reusable fetch function (no realtime)
+    const fetchDPProfile = async () => {
         if (!session?.user?.id) return;
 
-        const fetchDPProfile = async () => {
-            const { data, error } = await supabase
-                .from("delivery_partner")
-                .select("*")
-                .eq("u_id", session.user.id)
-                .single();
+        const { data, error } = await supabase
+            .from("delivery_partner")
+            .select("*")
+            .eq("u_id", session?.user?.id)
+            .single();
 
-            if (error) {
-                console.error("❌ Error fetching delivery partner profile:", error.message);
-            } else {
-                console.log("✅ Fetched DP Profile:", data);
-                setdpProfile(data);
-            }
-        };
+        if (error) {
+            console.error("❌ Error fetching delivery partner profile:", error.message);
+        } else {
+            console.log("✅ Fetched DP Profile:", data);
+            setdpProfile(data);
+        }
+    };
 
+    // ✅ Fetch on initial load or when session changes
+    useEffect(() => {
         fetchDPProfile();
-
-        // ✅ Setup realtime listener only once when session.user.id is available
-        const channel = supabase
-            .channel('dp-profile-updates')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'delivery_partner',
-                    filter: `u_id=eq.${session.user.id}`
-                },
-                (payload) => {
-                    console.log("📡 Realtime DP profile change:", payload);
-                    if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-                        setdpProfile(payload.new);
-                    }
-                    if (payload.eventType === 'DELETE') {
-                        setdpProfile(null);
-                    }
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [session?.user?.id]); // ✅ more specific than [session]
-    
+    }, [session?.user?.id]);
 
     return (
         <AuthContext.Provider
@@ -71,7 +46,8 @@ export const AuthProvider = ({ children }) => {
                 vendorData,
                 setVendorData,
                 dpProfile,
-                setdpProfile
+                setdpProfile,
+                fetchDPProfile, // ✅ export this so you can call it manually
             }}
         >
             {children}

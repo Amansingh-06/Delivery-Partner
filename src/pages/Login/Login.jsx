@@ -199,7 +199,8 @@ const Login = () => {
                 </div>
 
                 <p className=" text-[13px] lg:text-base mb-3 text-slate-700 font-semibold">
-                Hello XMeals Partner                </p>
+                    Try Xtra Affordable & Tasty Foods With XMeals
+                </p>
                 <h2 className="text-lg md:text-2xl lg:text-2xl font-medium text-slate-700  mb-1 lg:mb-3 ">
                     Enter Your Mobile Number
                 </h2>

@@ -94,15 +94,18 @@ export default function DPHomePage() {
             channel.unsubscribe();
         };
     }, [dpId]);
+
+    const DEFAULT_PHOTO = "./defaultuserImage.jpg";
+
     return (
-        <div className="mx-auto bg-gradient-to-br from-white via-gray-50 to-gray-100 min-h-screen text-gray-800 shadow-lg rounded-xl">
-            <div className='max-w-2xl space-y-6 mx-auto min-h-screen shadow-lg'>
+        <div className="mx-auto bg-gradient-to-br from-white via-gray-50 to-gray-100 min-h-[85vh]  text-gray-800 ">
+            <div className='max-w-2xl space-y-6 mx-auto  shadow-lg'>
                 <Header title='Order' />
 
-                <div className='max-w-2xl mx-auto md:p-6 p-3 shadow-lg rounded-2xl min-h-screen'>
+                <div className='max-w-2xl mx-auto md:p-6 p-3 md:mt-25 mt-13 py-15 shadow-lg rounded-2xl min-h-[80vh]'>
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4">
-                            <img src={dpProfile?.photo_url} alt="Profile" className="w-14 h-14 rounded-full shadow-md" />
+                            <img src={dpProfile?.photo_url || DEFAULT_PHOTO} alt="Profile" className="w-14 h-14 rounded-full shadow-md" />
                             <div>
                                 <h2 className="md:text-2xl text-lg font-bold">Hi, {dpProfile?.name}</h2>
                                 <p className="text-sm text-gray-600">
@@ -143,37 +146,51 @@ export default function DPHomePage() {
                         orders.map((order) => (
                             <div
                                 key={order.order_id}
-                                className="bg-white rounded-xl md:p-6 p-3 shadow-md border border-gray-200 mb-10"
+                                className="bg-white w-full  rounded-xl md:p-6 p-3 shadow-md border border-gray-200 mb-10"
                             >
-                                <div className="space-y-2">
-                                    <p><span className="font-semibold">Order ID:</span> {order?.user_order_id}</p>
-                                    <p><span className="font-semibold">Status:</span> <span className="text-blue-600 font-medium">{order?.status}</span></p>
-                                    <p><span className="font-semibold">Vendor:</span> {order?.vendor?.shop_name}</p>
-                                    <p><span className="font-semibold">Vendor Add.:</span> {order?.vendor?.street} {order?.vendor?.city}</p>
-                                </div>
 
-                                <div className="flex justify-between items-center mt-4">
-                                    <p className="text-lg font-medium">OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span></p>
-                                    <button
-                                        className="flex items-center text-white gap-1 font-medium bg-blue-600 hover:bg-blue-700 p-1 rounded-md transition"
-                                        onClick={() => {
-                                            const goingToCustomer = order?.status?.toLowerCase() === "on the way";
-                                            const lat = goingToCustomer ? order?.user_lat : order?.vendor_lat;
-                                            const long = goingToCustomer ? order?.user_long : order?.vendor_long;
-                                            window.open(
-                                                `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}`,
-                                                '_blank'
-                                            );
-                                        }}
-                                    >
-                                        <FaDirections />
-                                        {order?.status?.toLowerCase() === "on the way" ? "Go to Customer" : "Go to Vendor"}
-                                    </button>
-                                </div>
+                                {/* Basic Details (Hide if delivered) */}
+                                {/* {order?.status?.toLowerCase() !== "delivered" && (
+                                    <div className="space-y-2">
+                                        <p><span className="font-semibold">Order ID:</span> {order?.user_order_id}</p>
+                                        <p><span className="font-semibold">Status:</span> <span className="text-blue-600 font-medium">{order?.status}</span></p>
+                                        <p><span className="font-semibold">Vendor:</span> {order?.vendor?.shop_name}</p>
+                                        <p><span className="font-semibold">Vendor Add.:</span> {order?.vendor?.street} {order?.vendor?.city}</p>
+                                    </div>
+                                )} */}
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
+                                {/* OTP + Directions button (Only if not delivered) */}
+                                {order?.status?.toLowerCase() !== "delivered" && (
+                                    <div className="flex justify-between items-center mt-4">
+                                        {/* OTP only if not on the way */}
+                                        {order?.status?.toLowerCase() !== "on the way" && (
+                                            <p className="text-lg font-medium">OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span></p>
+                                        )}
+
+                                        <button
+                                            className="flex items-center text-white gap-1 font-medium bg-blue-600 hover:bg-blue-700 p-1 rounded-md transition"
+                                            onClick={() => {
+                                                const goingToCustomer = order?.status?.toLowerCase() === "on the way";
+                                                const lat = goingToCustomer ? order?.user_lat : order?.vendor_lat;
+                                                const long = goingToCustomer ? order?.user_long : order?.vendor_long;
+                                                window.open(
+                                                    `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}`,
+                                                    '_blank'
+                                                );
+                                            }}
+                                        >
+                                            <FaDirections />
+                                            {order?.status?.toLowerCase() === "on the way" ? "Go to Customer" : "Go to Vendor"}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Content Section */}
+                                <div className=" gap-6 mt-3">
                                     <div>
-                                        {order.status === "on the way" && order?.user && (
+
+                                        {/* If "on the way", show items & customer */}
+                                        {order?.status?.toLowerCase() === "on the way" && order?.user && (
                                             <div className="mt-2">
                                                 <h3 className="font-semibold text-gray-700 mb-1">Items</h3>
                                                 <p className="text-sm text-gray-700">
@@ -187,27 +204,48 @@ export default function DPHomePage() {
 
                                                 <h3 className="font-semibold text-gray-700 mb-1 mt-4">Customer Details</h3>
                                                 <p className="flex items-center gap-2"><FaUser /> {order?.user?.name}</p>
-                                                <p className="flex items-center gap-2"><MdLocationPin />{order?.address?.h_no},{ order?.address?.landmark}</p>
+                                                <p className="flex items-center gap-2"><MdLocationPin />{order?.address?.h_no}, {order?.address?.landmark}</p>
                                                 <p className="flex items-center gap-2"><FaPhone /> {order?.user?.mobile_number}</p>
                                             </div>
                                         )}
+
+                                        {/* If delivered, show full summary */}
+                                        {order?.status?.toLowerCase() === "delivered" && (
+                                            <div className="mt-2 space-y-2 text-gray-800 text-sm">
+                                                <p><span className="font-semibold">Items:</span> {order?.order_item?.map((item, i) => (
+                                                    <span key={item.order_item_id}>
+                                                        {item?.quantity} x {item?.items?.item_name}
+                                                        {i !== order?.order_item?.length - 1 && ', '}
+                                                    </span>
+                                                ))}</p>
+                                                <p><span className="font-semibold">Customer:</span> {order?.user?.name}</p>
+                                                <p><span className="font-semibold">Vendor:</span> {order?.vendor?.shop_name}</p>
+                                                <p><span className="font-semibold">Delivered At:</span> {new Date(order?.updated_ts).toLocaleString()}</p>
+                                                <p>
+                                                    <span className="font-semibold">Payment:</span>
+                                                    <span className={`ml-2 px-3 py-1 text-white rounded-full text-sm ${order.payment_mode === 'COD' ? 'bg-red-500' : 'bg-green-500'}`}>
+                                                        {order?.payment_mode}
+                                                    </span>
+                                                </p>
+                                                <h1 className='w-full p-2 border-green border-1 text-center bg-green-100'>Delivered</h1>
+                                            </div>
+                                        )}
+
+
                                     </div>
                                 </div>
 
-                                <div className="mt-4">
-                                    <span className="font-semibold">Payment:</span>
-                                    <span className={`ml-2 px-3 py-1 text-white rounded-full text-sm ${order.payment_mode === 'COD' ? 'bg-red-500' : 'bg-green-500'}`}>
-                                        {order?.payment_mode}
-                                    </span>
-                                </div>
+                                {/* "Mark as Delivered" button if "on the way" */}
+                                {order?.status?.toLowerCase() === "on the way" && (
+                                    <button
+                                        onClick={handleDeliveredClick}
+                                        className="mt-6 mb-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold shadow-sm transition"
+                                    >
+                                        <FaCheckCircle className="inline mr-2" /> Mark as Delivered
+                                    </button>
+                                )}
 
-                                <button
-                                    onClick={handleDeliveredClick}
-                                    className="mt-6 mb-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold shadow-sm transition"
-                                >
-                                    <FaCheckCircle className="inline mr-2" /> Mark as Delivered
-                                </button>
-
+                                {/* OTP Submit Modal */}
                                 {showOtpSubmit && (
                                     <div className="inset-0 z-50 backdrop-blur-sm bg-black/30 fixed flex justify-center items-center">
                                         <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-sm space-y-4">
@@ -217,12 +255,11 @@ export default function DPHomePage() {
                                                 type="text"
                                                 value={otp}
                                                 maxLength={6}
-                                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} // only digits
+                                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                                                 className={`w-full border ${otp.length > 0 && otp.length !== 6 ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 outline-none`}
                                                 placeholder="Enter 6-digit OTP"
                                             />
 
-                                            {/* Error below input */}
                                             {otp.length > 0 && otp.length !== 6 && (
                                                 <p className="text-red-500 text-xs -mt-2">OTP must be 6 digits</p>
                                             )}
@@ -240,20 +277,17 @@ export default function DPHomePage() {
                                                         if (!otp || otp.length !== 6) return;
 
                                                         setSubmittingOtp(true);
-                                                        // console.log(otp, "order?.otp")
+
                                                         if (parseInt(otp) !== parseInt(order?.user_otp)) {
                                                             setSubmittingOtp(false);
                                                             toast.error("Invalid OTP. Please try again.");
                                                             return;
                                                         }
 
-
                                                         const { success } = await updateOrderStatus(order?.order_id, 'delivered');
                                                         if (success) {
-                                                            // setLocalStatus('on the way');
                                                             setShowOtpSubmit(false);
-                                                             setStatus("Delivered");
-
+                                                            setStatus("Delivered");
                                                             onStatusUpdate?.(order?.order_id);
                                                             toast.success("OTP verified. Delivery started.");
                                                         } else {
@@ -262,8 +296,7 @@ export default function DPHomePage() {
 
                                                         setSubmittingOtp(false);
                                                     }}
-                                                    className={`px-3 py-1 rounded text-white ${otp.length === 6 ? 'bg-green-600' : 'bg-gray-400 cursor-not-allowed'
-                                                        }`}
+                                                    className={`px-3 py-1 rounded text-white ${otp.length === 6 ? 'bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
                                                     disabled={otp.length !== 6 || submittingOtp}
                                                 >
                                                     {submittingOtp ? "Submitting..." : "Submit"}
@@ -279,6 +312,8 @@ export default function DPHomePage() {
                             📦 No active orders found
                         </div>
                     )}
+
+
                 </div>
             </div>
             <BottomNav />

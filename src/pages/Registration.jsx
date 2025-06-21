@@ -50,7 +50,7 @@ const Registration = () => {
     const [loading, setLoading] = useState(false);
     const [photoSelected, setPhotoSelected] = useState(false);
 
-    const { session } = useAuth();
+    const {setSession, session,fetchDPProfile } = useAuth();
     const navigate = useNavigate();
 
     const formattedPhone = session.user.phone.startsWith('+')
@@ -152,6 +152,10 @@ const Registration = () => {
             // ✅ Step 5: Refresh session & Navigate
             const { data: sessionData } = await supabase.auth.getSession();
             if (sessionData?.session?.user?.user_metadata?.isRegistered) {
+                setSession(sessionData.session); // ✅ VERY IMPORTANT
+                await fetchDPProfile(); // ✅ This will update UI immediately
+
+                await new Promise(resolve => setTimeout(resolve, 100)); // small pause
                 navigate("/home");
             } else {
                 toast.error("User session not updated with registration info");
@@ -164,13 +168,7 @@ const Registration = () => {
             setLoading(false);
         }
     };
-    
 
-    const removePhotoPreview = () => {
-        setPhotoPreview(null);
-        setValue('photo', null);
-        trigger('photo');
-    };
     
 
     return (
@@ -178,7 +176,7 @@ const Registration = () => {
             {loading && <Loader/>}
             <div className="w-full max-w-2xl   space-y-4     bg-white ">
                 <Header title='Registration'/>
-                <div className='max-w-2xl  px-4 py-8 shadow-lg'>
+                <div className='max-w-2xl  px-4 py-15 mt-15 shadow-lg'>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl  ">
                         <div className='flex-col flex gap-8 px-6  py-8 rounded-2xl shadow-lg '>
                             <h1 className='text-2xl font-semibold text-gray-500'>Basic Details</h1>
@@ -300,6 +298,8 @@ const Registration = () => {
                                                             e.stopPropagation();
                                                             setPhotoPreview(null);
                                                             setPhotoSelected(false); // reset state
+                                                            setValue('photo', null); // remove file from form
+                                                            trigger('photo'); // revalidate if needed
                                                         }}
                                                         className="absolute top-2 right-2 bg-white rounded-full p-1 shadow hover:bg-gray-100"
                                                     >
