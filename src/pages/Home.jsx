@@ -11,6 +11,7 @@ import { useAuth } from '../Context/authContext';
 import { supabase } from '../utils/Supabase';
 import toast from 'react-hot-toast';
 import { updateOrderStatus } from '../utils/updateOrderStauts';
+import { truncateLetters } from '../constant/constants';
 
 
 export default function DPHomePage() {
@@ -93,16 +94,18 @@ export default function DPHomePage() {
         return () => {
             channel.unsubscribe();
         };
-    }, [dpId]);
+    }, [dpId,status]);
+    { console.log("order", orders) }
+
 
     const DEFAULT_PHOTO = "./defaultuserImage.jpg";
 
     return (
-        <div className="mx-auto bg-gradient-to-br from-white via-gray-50 to-gray-100 min-h-[85vh]  text-gray-800 ">
+        <div className="mx-auto bg-gradient-to-br from-white via-gray-50 to-gray-100 min-h-[88vh]  text-gray-800 ">
             <div className='max-w-2xl space-y-6 mx-auto  shadow-lg'>
                 <Header title='Order' />
 
-                <div className='max-w-2xl mx-auto md:p-6 p-3 md:mt-25 mt-13 py-15 shadow-lg rounded-2xl min-h-[80vh]'>
+                <div className='max-w-2xl mx-auto md:p-6 p-3 md:mt-25 mt-13 py-15 shadow-lg rounded-2xl min-h-[88vh]'>
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4">
                             <img src={dpProfile?.photo_url || DEFAULT_PHOTO} alt="Profile" className="w-14 h-14 rounded-full shadow-md" />
@@ -161,10 +164,19 @@ export default function DPHomePage() {
 
                                 {/* OTP + Directions button (Only if not delivered) */}
                                 {order?.status?.toLowerCase() !== "delivered" && (
-                                    <div className="flex justify-between items-center mt-4">
+                                    <div className="flex flex-col   ">
                                         {/* OTP only if not on the way */}
+                                        <div className="space-y-2 ">
+                                            <p><span className="font-semibold">Order ID:</span> {order?.user_order_id}</p>
+                                            <p><span className="font-semibold">Status:</span> <span className="text-blue-600 font-medium">{order?.status}</span></p>
+                                            <p><span className="font-semibold ">Vendor:</span> {truncateLetters(order?.vendor?.shop_name,20) }</p>
+                                            <p><span className="font-semibold">Vendor Add.:</span> {order?.vendor?.street} {order?.vendor?.city}</p>
+                                        </div>
+                                        <div className='flex justify-between items-center w-full mt-2'>
                                         {order?.status?.toLowerCase() !== "on the way" && (
-                                            <p className="text-lg font-medium">OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span></p>
+                                            <>
+                                            <p className="text-lg font-medium">OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span></p>   
+                                            </>
                                         )}
 
                                         <button
@@ -181,13 +193,14 @@ export default function DPHomePage() {
                                         >
                                             <FaDirections />
                                             {order?.status?.toLowerCase() === "on the way" ? "Go to Customer" : "Go to Vendor"}
-                                        </button>
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
 
                                 {/* Content Section */}
-                                <div className=" gap-6 mt-3">
-                                    <div>
+                                <div className="  mt-3">
+                                    <div className='gap-2'>
 
                                         {/* If "on the way", show items & customer */}
                                         {order?.status?.toLowerCase() === "on the way" && order?.user && (
@@ -210,26 +223,29 @@ export default function DPHomePage() {
                                         )}
 
                                         {/* If delivered, show full summary */}
-                                        {order?.status?.toLowerCase() === "delivered" && (
-                                            <div className="mt-2 space-y-2 text-gray-800 text-sm">
-                                                <p><span className="font-semibold">Items:</span> {order?.order_item?.map((item, i) => (
-                                                    <span key={item.order_item_id}>
-                                                        {item?.quantity} x {item?.items?.item_name}
-                                                        {i !== order?.order_item?.length - 1 && ', '}
-                                                    </span>
-                                                ))}</p>
-                                                <p><span className="font-semibold">Customer:</span> {order?.user?.name}</p>
-                                                <p><span className="font-semibold">Vendor:</span> {order?.vendor?.shop_name}</p>
-                                                <p><span className="font-semibold">Delivered At:</span> {new Date(order?.updated_ts).toLocaleString()}</p>
-                                                <p>
-                                                    <span className="font-semibold">Payment:</span>
-                                                    <span className={`ml-2 px-3 py-1 text-white rounded-full text-sm ${order.payment_mode === 'COD' ? 'bg-red-500' : 'bg-green-500'}`}>
-                                                        {order?.payment_mode}
-                                                    </span>
-                                                </p>
-                                                <h1 className='w-full p-2 border-green border-1 text-center bg-green-100'>Delivered</h1>
-                                            </div>
-                                        )}
+                                    
+                                            {order?.status?.toLowerCase() === "delivered" && (
+                                                <div className=" space-y-2 text-gray-800 text-sm">
+                                                    <p><span className="font-semibold">Items:</span> {order?.order_item?.map((item, i) => (
+                                                        <span key={item.order_item_id}>
+                                                            {item?.quantity} x {item?.items?.item_name}
+                                                            {i !== order?.order_item?.length - 1 && ', '}
+                                                        </span>
+                                                    ))}</p>
+                                                    <p><span className="font-semibold">Customer:</span> {order?.user?.name}</p>
+                                                    <p><span className="font-semibold">Vendor:</span> {truncateLetters(order?.vendor?.shop_name, 20)}</p>
+                                                    <p><span className="font-semibold">Delivered At:</span> {new Date(order?.updated_ts).toLocaleString()}</p>
+                                                    <p>
+                                                        <span className="font-semibold">Payment:</span>
+                                                        <span className={`ml-2 px-3 py-1 text-white rounded-full text-sm ${order.payment_mode === 'COD' ? 'bg-red-500' : 'bg-green-500'}`}>
+                                                            {order?.payment_mode}
+                                                        </span>
+                                                    </p>
+                                                    <h1 className='w-full p-2 border-green border-1 text-center bg-green-100'>Delivered</h1>
+                                                </div>
+                                            )}
+                                        
+                                      
 
 
                                     </div>

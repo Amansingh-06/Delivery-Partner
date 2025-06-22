@@ -185,7 +185,7 @@ export default function DpProfile() {
     };
 
     return (
-        <div className='max-w-2xl mx-auto mb-10 p'>
+        <div className='max-w-2xl mx-auto mb-12 pt-13'>
             <Header title='Profile'/>
             <div className="max-w-2xl mx-auto mt-10 bg-white p-6 mb-10 rounded-2xl shadow-xl border border-gray-200">
 {loading && <Loader/>}

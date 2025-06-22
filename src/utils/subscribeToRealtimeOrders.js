@@ -1,7 +1,8 @@
 import { supabase } from "./Supabase";
-import { fetchOrdersByDP } from "./fetchOrdersByDp"; // ✅ import your existing fetcher
+import { fetchOrdersByDP } from "./fetchOrdersByDp";
 
-export function subscribeToRealtimeOrders(dpId, setOrders) {
+// Now accepting `status` filter as well
+export function subscribeToRealtimeOrders(dpId, status, setOrders) {
     const channel = supabase.channel('realtime-orders-dp');
 
     channel
@@ -13,9 +14,9 @@ export function subscribeToRealtimeOrders(dpId, setOrders) {
                 table: 'orders',
                 filter: `dp_id=eq.${dpId}`,
             },
-            async (payload) => {
-                // ✅ Re-fetch complete order with nested vendor, user, order_item etc.
-                const result = await fetchOrdersByDP(dpId);
+            async () => {
+                // ✅ Pass dpId and status filter
+                const result = await fetchOrdersByDP(dpId, status);
                 if (result.success) {
                     setOrders(result.data);
                 } else {
