@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useForm,Controller } from 'react-hook-form';
 import { X } from 'lucide-react';
 import InputField from '../components/InputField';
@@ -8,7 +8,7 @@ import {toast} from 'react-hot-toast';
 import { supabase } from '../utils/Supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '../Context/authContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,useNavigationType } from 'react-router-dom';
 import { GrStreetView } from "react-icons/gr";
 import { PiCityLight } from "react-icons/pi";
 import { PiMapPinAreaLight } from "react-icons/pi";
@@ -44,6 +44,21 @@ const Registration = () => {
         trigger
     } = useForm({ mode: 'onChange' });
 
+    const { setCameFromUserDetailsPage } = useAuth();
+
+
+    const navigate = useNavigate();
+
+    const navType = useNavigationType(); // "PUSH" | "REPLACE" | "POP"
+
+    useEffect(() => {
+        // On POP (refresh, back/forward, direct URL), clear any state:
+        // console.log("Nav Type", navType);
+        if (navType === "POP") {
+            navigate("/", { replace: true });
+        }
+    }, [navType, navigate]);
+
     const [photoPreview, setPhotoPreview] = useState(null);
     const [idFileName, setIdFileName] = useState('');
     const [idFile, setIdFile] = useState([]);
@@ -51,7 +66,6 @@ const Registration = () => {
     const [photoSelected, setPhotoSelected] = useState(false);
 
     const {setSession, session,fetchDPProfile } = useAuth();
-    const navigate = useNavigate();
 
     const formattedPhone = session.user.phone.startsWith('+')
         ? session.user.phone

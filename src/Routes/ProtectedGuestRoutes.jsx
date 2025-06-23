@@ -71,11 +71,11 @@ const ProtectedGuestRoute = ({ children }) => {
     }
 
     // Agar login ho chuka lekin registered nahi hai, toh registration page pe rehne do
-    if (session && !isRegistered) {
-        if (location.pathname !== "/registration") {
-            return <Navigate to="/registration" replace />;
-        }
-    }
+    // if (session && !isRegistered) {
+    //     if (location.pathname !== "/registration") {
+    //         return <Navigate to="/registration" replace />;
+    //     }
+    // }
 
     // Agar koi session nahi hai, toh yeh guest route hai, to children render kar do (login/register page)
     return children;
