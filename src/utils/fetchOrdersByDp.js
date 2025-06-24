@@ -1,6 +1,5 @@
-import { supabase } from './Supabase';
-
-export const fetchOrdersByDP = async (dp_id, statusFilter) => {
+import { supabase } from "./Supabase";
+export const fetchOrdersByDP = async (dp_id, statusFilter, limit = 5, offset = 0) => {
   try {
     let query = supabase
       .from('orders')
@@ -15,9 +14,10 @@ export const fetchOrdersByDP = async (dp_id, statusFilter) => {
           items:item_id (*)
         )
       `)
-      .eq('dp_id', dp_id);
+      .eq('dp_id', dp_id)
+      .order('created_ts', { ascending: false }) // latest orders first
+      .range(offset, offset + limit - 1); // pagination
 
-    // Apply status filters based on tab
     if (statusFilter === 'Pick up') {
       query = query.in('status', ['accepted', 'preparing', 'prepared']);
     } else if (statusFilter === 'With You') {

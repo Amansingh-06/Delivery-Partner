@@ -11,7 +11,7 @@ import Dp_Profile from './pages/Dp_profilePage';
 import InstallPrompt from './components/InstallPrompt';
 function App() {
   return (
-    <div className='font-family-poppins'>
+    <div className='font-family-poppins bg-gradient-to-br  from-white via-gray-50 to-gray-100'>
       <Router>
         <Routes>
           <Route path="/" element={<ProtectedGuestRoute>

@@ -1,30 +1,43 @@
 import { supabase } from "./Supabase";
-import { fetchOrdersByDP } from "./fetchOrdersByDp";
-
-// Now accepting `status` filter as well
-export function subscribeToRealtimeOrders(dpId, status, setOrders) {
+export function subscribeToRealtimeOrders(dpId, statusFilter, setOrders) {
     const channel = supabase.channel('realtime-orders-dp');
-
+  
     channel
-        .on(
-            'postgres_changes',
-            {
-                event: '*',
-                schema: 'public',
-                table: 'orders',
-                filter: `dp_id=eq.${dpId}`,
-            },
-            async () => {
-                // ✅ Pass dpId and status filter
-                const result = await fetchOrdersByDP(dpId, status);
-                if (result.success) {
-                    setOrders(result.data);
-                } else {
-                    console.error("Failed to refetch updated orders", result.error);
-                }
-            }
-        )
-        .subscribe();
-
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `dp_id=eq.${dpId}`,
+        },
+        async (payload) => {
+          const updatedOrder = payload.new;
+  
+          const matchesFilter =
+            (statusFilter === 'Pick up' &&
+              ['accepted', 'preparing', 'prepared'].includes(updatedOrder.status)) ||
+            (statusFilter === 'With You' && updatedOrder.status === 'on the way') ||
+            (statusFilter === 'Delivered' && updatedOrder.status === 'delivered');
+  
+          if (!matchesFilter) return;
+  
+          // ✅ Just update matching order, don't overwrite whole array
+          setOrders((prevOrders) => {
+            const index = prevOrders.findIndex(o => o.order_id === updatedOrder.order_id);
+            if (index === -1) return prevOrders;
+  
+            const updated = [...prevOrders];
+            updated[index] = {
+              ...updated[index],
+              ...updatedOrder
+            };
+            return updated;
+          });
+        }
+      )
+      .subscribe();
+  
     return channel;
-}
+  }
+  

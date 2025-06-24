@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef,useCallback } from 'react';
 import { Switch } from "@headlessui/react";
 import { FaDirections, FaBoxOpen, FaUser, FaCheckCircle } from "react-icons/fa";
 import BottomNav from '../components/Footer';
@@ -13,101 +13,151 @@ import toast from 'react-hot-toast';
 import { updateOrderStatus } from '../utils/updateOrderStauts';
 import { truncateLetters } from '../constant/constants';
 
-
 export default function DPHomePage() {
-    const [isOnline, setIsOnline] = useState(null);
-    const [orders, setOrders] = useState([]);
-    const [status, setStatus] = useState("Pick up");
-    const [otpInput, setOtpInput] = useState("");
-    const [submittingOtp, setSubmittingOtp] = useState(false);
-    const [showOtpSubmit, setShowOtpSubmit] = useState(false);
-    const [otp, setOtp] = useState("");
-
     const { dpProfile, session } = useAuth();
-    const dpId = "43c6aeba-34e0-4ad7-9caf-9eb661b2e043"; // fallback-safe
-
-    const handleDeliveredClick = () => {
-        setShowOtpSubmit(true);
-    };
-
-    // ✅ Get online status on mount
+    const dpId = "43c6aeba-34e0-4ad7-9caf-9eb661b2e043"; // fallback
+    const LIMIT = 5;
+  
+    const [showOtpSubmit, setShowOtpSubmit] = useState(false);
+    const [isOnline, setIsOnline] = useState(null);
+    const [status, setStatus] = useState("Pick up");
+    const [orders, setOrders] = useState([]);
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
+  
+    const observer = useRef();
+  
+    const handleDeliveredClick = () => setShowOtpSubmit(true);
+  
+    // ✅ Get availability status
     useEffect(() => {
-        const fetchAvailability = async () => {
-            if (!session?.user?.id) return;
-            const { data, error } = await supabase
-                .from("delivery_partner")
-                .select("available")
-                .eq("u_id", session.user.id)
-                .single();
-
-            if (error) {
-                console.error("Error fetching availability:", error.message);
-                toast.error("Unable to load availability");
-                setIsOnline(false);
-            } else {
-                setIsOnline(data?.available ?? false);
-            }
-        };
-
-        fetchAvailability();
-    }, [session?.user?.id]);
-
-    // ✅ Toggle online/offline status
-    const handleToggleOnline = async (value) => {
-        setIsOnline(value);
-        const { error } = await supabase
-            .from("delivery_partner")
-            .update({ available: value })
-            .eq("u_id", session.user.id);
-
+      const fetchAvailability = async () => {
+        if (!session?.user?.id) return;
+        const { data, error } = await supabase
+          .from("delivery_partner")
+          .select("available")
+          .eq("u_id", session.user.id)
+          .single();
+  
         if (error) {
-            toast.error("Could not update status");
-            setIsOnline(!value); // revert if failed
+          console.error("Error fetching availability:", error.message);
+          toast.error("Unable to load availability");
+          setIsOnline(false);
         } else {
-            toast.success(`You are now ${value ? "Online" : "Offline"}`);
+          setIsOnline(data?.available ?? false);
         }
+      };
+  
+      console.log("🔄 Fetching availability...");
+      fetchAvailability();
+    }, [session?.user?.id]);
+  
+    // ✅ Toggle Online/Offline
+    const handleToggleOnline = async (value) => {
+      setIsOnline(value);
+      const { error } = await supabase
+        .from("delivery_partner")
+        .update({ available: value })
+        .eq("u_id", session.user.id);
+  
+      if (error) {
+        toast.error("Could not update status");
+        setIsOnline(!value);
+      } else {
+        toast.success(`You are now ${value ? "Online" : "Offline"}`);
+      }
     };
-
-    // ✅ Fetch orders on tab/status change
+  
+    // ✅ Fetch Orders with Pagination
+    const fetchOrders = useCallback(
+      async (reset = false) => {
+        if (!dpId || isLoading) {
+          console.log("⏸ Skipping fetchOrders. dpId:", dpId, "isLoading:", isLoading);
+          return;
+        }
+  
+        const currentOffset = reset ? 0 : offset;
+  
+        if (reset) {
+          setOrders([]);
+          setOffset(0);
+          setHasMore(true);
+        }
+  
+        console.log(`📦 Fetching orders... Reset: ${reset} Offset: ${currentOffset}`);
+  
+        setIsLoading(true);
+        const result = await fetchOrdersByDP(dpId, status, LIMIT, currentOffset);
+  
+        if (result.success) {
+          console.log("✅ Orders fetched:", result.data.length);
+          if (reset) {
+            setOrders(result.data);
+            setOffset(LIMIT);
+          } else {
+            setOrders((prev) => [...prev, ...result.data]);
+            setOffset((prev) => prev + LIMIT);
+          }
+          setHasMore(result.data.length === LIMIT);
+        } else {
+          toast.error("Failed to fetch orders");
+          console.error("❌ Fetch failed:", result.error);
+        }
+  
+        setIsLoading(false);
+      },
+      [dpId, status, offset, isLoading]
+    );
+  
+    // ✅ Fetch Orders on Status Change
     useEffect(() => {
-        const getOrders = async () => {
-            const result = await fetchOrdersByDP(dpId, status);
-            if (result.success) {
-                setOrders(result.data);
-            } else {
-                console.error("Error fetching orders:", result.error);
-            }
-        };
-
-        getOrders();
-    }, [dpId, status]);
-
-    // ✅ Realtime subscribe (only once)
-    useEffect(() => {
-        const channel = subscribeToRealtimeOrders(dpId, async () => {
-            const result = await fetchOrdersByDP(dpId, status);
-            if (result.success) {
-                setOrders(result.data);
-            }
+      console.log("🧹 Resetting orders for status:", status);
+      fetchOrders(true);
+    }, [status, dpId]);
+  
+    // ✅ Infinite Scroll
+    const lastOrderRef = useCallback(
+      (node) => {
+        if (isLoading || !hasMore) return;
+        if (observer.current) observer.current.disconnect();
+  
+        observer.current = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) {
+            console.log("📌 Last order visible, fetching more...");
+            fetchOrders(false);
+          }
         });
-
-        return () => {
-            channel.unsubscribe();
-        };
-    }, [dpId,status]);
-    { console.log("order", orders) }
+  
+        if (node) observer.current.observe(node);
+      },
+      [isLoading, hasMore, fetchOrders]
+    );
+  
+    // ✅ Realtime Updates
+    useEffect(() => {
+      console.log("📡 Subscribing to realtime for status:", status);
+      const channel = subscribeToRealtimeOrders(dpId, status, setOrders);
+  
+      return () => {
+        console.log("🧹 Unsubscribing from realtime...");
+        channel.unsubscribe();
+      };
+    }, [dpId, status]);
+  
+    console.log("📋 Current Orders:", orders.length);
 
 
     const DEFAULT_PHOTO = "./defaultuserImage.jpg";
 
     return (
-        <div className="mx-auto bg-gradient-to-br from-white via-gray-50 to-gray-100 min-h-[88vh]  text-gray-800 ">
+        <div className="mx-auto  min-h-[88vh]  text-gray-800 ">
             <div className='max-w-2xl space-y-6 mx-auto  shadow-lg'>
                 <Header title='Order' />
 
-                <div className='max-w-2xl mx-auto md:p-6 p-3 md:mt-25 mt-13 py-15 shadow-lg rounded-2xl min-h-[88vh]'>
+                <div className='max-w-2xl mx-auto md:p-6 p-3 md:mt-25 mt-13 py-15 shadow-lg rounded-2xl min-h-[85vh]  mb-15'>
                     <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 ">
                             <img src={dpProfile?.photo_url || DEFAULT_PHOTO} alt="Profile" className="w-14 h-14 rounded-full shadow-md" />
                             <div>
                                 <h2 className="md:text-2xl text-lg font-bold">Hi, {dpProfile?.name}</h2>
@@ -149,7 +199,7 @@ export default function DPHomePage() {
                         orders.map((order) => (
                             <div
                                 key={order.order_id}
-                                className="bg-white w-full  rounded-xl md:p-6 p-3 shadow-md border border-gray-200 mb-10"
+                                className="bg-white w-full  rounded-xl md:p-6 p-3 shadow-md  border-gray-300 mb-5 border"
                             >
 
                                 {/* Basic Details (Hide if delivered) */}
