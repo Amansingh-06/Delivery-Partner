@@ -149,9 +149,9 @@ export const handleSignup = async (data, flag = false, navigate, setSession, set
 
 export const logout = async (setSession) => {
     try {
-        await supabase.auth.updateUser({
-            data: { isRegistered: false },
-        });
+        // await supabase.auth.updateUser({
+        //     data: { isRegistered: false },
+        // });
         await supabase.auth.signOut();
         setSession(null);
         // toast.success("logged out");

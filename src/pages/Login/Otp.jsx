@@ -217,7 +217,7 @@ const Otp = () => {
                 <img
                     src={LoginBGimage}
                     alt="Login Visual"
-                    className="object-cover w-full h-[39vh] lg:h-screen"
+                    className="object-cover w-full h-[52vh] lg:h-screen"
                 />
                 <Link to="/" className="absolute text-orange bg-white rounded-full p-3 text-3xl lg:text-3xl font-bold top-4 lg:top-5 left-1 lg:left-4 z-20"><FiArrowLeft /></Link>
             </div>
@@ -227,9 +227,9 @@ const Otp = () => {
                 onSubmit={handleSubmit(onSubmit)}
                 autoComplete="off"
                 id="otp-form"
-                className="relative p-4 lg:p-10 w-full lg:w-[34%] rounded-t-3xl lg:rounded-none flex flex-col items-start justify-start md:justify-center ml-0 lg:-ml-5 bg-white overflow-y-auto min-h-[52vh] lg:h-screen -mt-5 lg:mt-0"
+                className="relative p-4 lg:p-10 w-full lg:w-[34%] rounded-t-3xl lg:rounded-none flex flex-col items-start justify-center ml-0 lg:-ml-5 bg-white overflow-y-auto max-h-[66vh]  lg:max-h-none lg:min-h-[66vh] -mt-5 lg:mt-0"
             >
-                <div className="flex items-center justify-center mb-3 lg:mb-4 text-sm lg:text-lg font-medium text-slate-700 ">
+                <div className="flex items-center justify-center mb-3 lg:mb-4 text-sm lg:text-lg font-medium text-gray ">
                     {phone && (
                         <>
                             OTP sent to&nbsp;{phone}
@@ -314,7 +314,7 @@ const Otp = () => {
                 )} */}
 
                 {/* OTP Input */}
-                <div className="space-y-2 text-slate-700 mt-4">
+                <div className="space-y-2 text-gray mt-4">
                     <label className="text-base font-medium ">Enter OTP</label>
                     <OTPInput
                         value={otp}
@@ -384,11 +384,13 @@ const Otp = () => {
                     <button
                         type="submit"
                         name="defaultSignup"
-                        className={`flex items-center justify-center gap-2 md:gap-3 w-full lg:w-[200px] text-white py-3 rounded-xl font-semibold transition duration-300 shadow-lg z-50
-    ${!isValid || otp?.length !== 6
-                                ? "bg-orange-200 cursor-not-allowed"
-                                : "bg-orange hover:bg-orange/90 cursor-pointer hover:scale-95"
+                        className={`flex items-center  justify-center gap-2 md:gap-3 w-full lg:w-[120px] text-white py-3 rounded-xl font-semibold transition duration-300 shadow-lg z-50
+                            ${
+                              isValid && otp?.length === 6
+                                ? "bg-orange text-white hover:bg-orange/90 hover:scale-95 cursor-pointer"
+                                : "bg-orange/50 text-white cursor-not-allowed opacity-70"
                             }`}
+                          
                         disabled={authenticating}
                     >
                         {isLogin ? "Login" : "Sign Up"}

@@ -25,10 +25,14 @@ export default function DPHomePage() {
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
+    const [otp, setOtp] = useState('')
+  const [submittingOtp, setSubmittingOtp] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
   
     const observer = useRef();
   
-    const handleDeliveredClick = () => setShowOtpSubmit(true);
+
   
     // ✅ Get availability status
     useEffect(() => {
@@ -195,192 +199,183 @@ export default function DPHomePage() {
                     </div>
 
                     {/* Order Cards */}
-                    {orders?.length > 0 ? (
-                        orders.map((order) => (
-                            <div
-                                key={order.order_id}
-                                className="bg-white w-full  rounded-xl md:p-6 p-3 shadow-md  border-gray-300 mb-5 border"
-                            >
+                    {isLoading ? (
+  <div className="flex flex-col justify-center items-center py-10">
+    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    <p className="text-gray-500 mt-4 text-sm">Loading orders...</p>
+  </div>
+) : orders?.length > 0 ? (
+  orders.map((order) => (
+    <div
+      key={order.order_id}
+      className="bg-white w-full rounded-xl md:p-6 p-3 shadow-md border-gray-300 mb-5 border"
+    >
+      {/* OTP + Directions button (Only if not delivered) */}
+      {order?.status?.toLowerCase() !== "delivered" && (
+        <div className="flex flex-col">
+          <div className="space-y-2">
+            <p><span className="font-semibold">Order ID:</span> {order?.user_order_id}</p>
+            <p><span className="font-semibold">Status:</span> <span className="text-blue-600 font-medium">{order?.status}</span></p>
+            <p><span className="font-semibold">Vendor:</span> {truncateLetters(order?.vendor?.shop_name, 20)}</p>
+            <p><span className="font-semibold">Vendor Add.:</span> {order?.vendor?.street} {order?.vendor?.city}</p>
+          </div>
 
-                                {/* Basic Details (Hide if delivered) */}
-                                {/* {order?.status?.toLowerCase() !== "delivered" && (
-                                    <div className="space-y-2">
-                                        <p><span className="font-semibold">Order ID:</span> {order?.user_order_id}</p>
-                                        <p><span className="font-semibold">Status:</span> <span className="text-blue-600 font-medium">{order?.status}</span></p>
-                                        <p><span className="font-semibold">Vendor:</span> {order?.vendor?.shop_name}</p>
-                                        <p><span className="font-semibold">Vendor Add.:</span> {order?.vendor?.street} {order?.vendor?.city}</p>
-                                    </div>
-                                )} */}
+          <div className='flex justify-between items-center w-full mt-2'>
+            {order?.status?.toLowerCase() !== "on the way" && (
+              <p className="text-lg font-medium">
+                OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span>
+              </p>
+            )}
 
-                                {/* OTP + Directions button (Only if not delivered) */}
-                                {order?.status?.toLowerCase() !== "delivered" && (
-                                    <div className="flex flex-col   ">
-                                        {/* OTP only if not on the way */}
-                                        <div className="space-y-2 ">
-                                            <p><span className="font-semibold">Order ID:</span> {order?.user_order_id}</p>
-                                            <p><span className="font-semibold">Status:</span> <span className="text-blue-600 font-medium">{order?.status}</span></p>
-                                            <p><span className="font-semibold ">Vendor:</span> {truncateLetters(order?.vendor?.shop_name,20) }</p>
-                                            <p><span className="font-semibold">Vendor Add.:</span> {order?.vendor?.street} {order?.vendor?.city}</p>
-                                        </div>
-                                        <div className='flex justify-between items-center w-full mt-2'>
-                                        {order?.status?.toLowerCase() !== "on the way" && (
-                                            <>
-                                            <p className="text-lg font-medium">OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span></p>   
-                                            </>
-                                        )}
+            <button
+              className="flex items-center text-white gap-1 font-medium bg-blue-600 hover:bg-blue-700 p-1 rounded-md transition"
+              onClick={() => {
+                const goingToCustomer = order?.status?.toLowerCase() === "on the way";
+                const lat = goingToCustomer ? order?.user_lat : order?.vendor_lat;
+                const long = goingToCustomer ? order?.user_long : order?.vendor_long;
+                window.open(
+                  `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}`,
+                  '_blank'
+                );
+              }}
+            >
+              <FaDirections />
+              {order?.status?.toLowerCase() === "on the way" ? "Go to Customer" : "Go to Vendor"}
+            </button>
+          </div>
+        </div>
+      )}
 
-                                        <button
-                                            className="flex items-center text-white gap-1 font-medium bg-blue-600 hover:bg-blue-700 p-1 rounded-md transition"
-                                            onClick={() => {
-                                                const goingToCustomer = order?.status?.toLowerCase() === "on the way";
-                                                const lat = goingToCustomer ? order?.user_lat : order?.vendor_lat;
-                                                const long = goingToCustomer ? order?.user_long : order?.vendor_long;
-                                                window.open(
-                                                    `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}`,
-                                                    '_blank'
-                                                );
-                                            }}
-                                        >
-                                            <FaDirections />
-                                            {order?.status?.toLowerCase() === "on the way" ? "Go to Customer" : "Go to Vendor"}
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
+      {/* Content Section */}
+      <div className="mt-3">
+        <div className='gap-2'>
+          {order?.status?.toLowerCase() === "on the way" && order?.user && (
+            <div className="mt-2">
+              <h3 className="font-semibold text-gray-700 mb-1">Items</h3>
+              <p className="text-sm text-gray-700">
+                {order?.order_item?.map((item, index) => (
+                  <span key={item.order_item_id}>
+                    {item?.quantity} x {item?.items?.item_name}
+                    {index !== order?.order_item?.length - 1 && ', '}
+                  </span>
+                ))}
+              </p>
 
-                                {/* Content Section */}
-                                <div className="  mt-3">
-                                    <div className='gap-2'>
+              <h3 className="font-semibold text-gray-700 mb-1 mt-4">Customer Details</h3>
+              <p className="flex items-center gap-2"><FaUser /> {order?.user?.name}</p>
+              <p className="flex items-center gap-2"><MdLocationPin />{order?.address?.h_no}, {order?.address?.landmark}</p>
+              <p className="flex items-center gap-2"><FaPhone /> {order?.user?.mobile_number}</p>
+            </div>
+          )}
 
-                                        {/* If "on the way", show items & customer */}
-                                        {order?.status?.toLowerCase() === "on the way" && order?.user && (
-                                            <div className="mt-2">
-                                                <h3 className="font-semibold text-gray-700 mb-1">Items</h3>
-                                                <p className="text-sm text-gray-700">
-                                                    {order?.order_item?.map((item, index) => (
-                                                        <span key={item.order_item_id}>
-                                                            {item?.quantity} x {item?.items?.item_name}
-                                                            {index !== order?.order_item?.length - 1 && ', '}
-                                                        </span>
-                                                    ))}
-                                                </p>
+          {order?.status?.toLowerCase() === "delivered" && (
+            <div className="space-y-2 text-gray-800 text-sm">
+              <p><span className="font-semibold">Items:</span> {order?.order_item?.map((item, i) => (
+                <span key={item.order_item_id}>
+                  {item?.quantity} x {item?.items?.item_name}
+                  {i !== order?.order_item?.length - 1 && ', '}
+                </span>
+              ))}</p>
+              <p><span className="font-semibold">Customer:</span> {order?.user?.name}</p>
+              <p><span className="font-semibold">Vendor:</span> {truncateLetters(order?.vendor?.shop_name, 20)}</p>
+              <p><span className="font-semibold">Delivered At:</span> {new Date(order?.updated_ts).toLocaleString()}</p>
+              <p>
+                <span className="font-semibold">Payment:</span>
+                <span className={`ml-2 px-3 py-1 text-white rounded-full text-sm ${order.payment_mode === 'COD' ? 'bg-red-500' : 'bg-green-500'}`}>
+                  {order?.payment_mode}
+                </span>
+              </p>
+              <h1 className='w-full p-2 border-green border-1 text-center bg-green-100'>Delivered</h1>
+            </div>
+          )}
+        </div>
+      </div>
 
-                                                <h3 className="font-semibold text-gray-700 mb-1 mt-4">Customer Details</h3>
-                                                <p className="flex items-center gap-2"><FaUser /> {order?.user?.name}</p>
-                                                <p className="flex items-center gap-2"><MdLocationPin />{order?.address?.h_no}, {order?.address?.landmark}</p>
-                                                <p className="flex items-center gap-2"><FaPhone /> {order?.user?.mobile_number}</p>
-                                            </div>
-                                        )}
+      {/* "Mark as Delivered" button if "on the way" */}
+      {order?.status?.toLowerCase() === "on the way" && (
+        <button
+        onClick={() => {
+          setSelectedOrder(order);
+          setShowOtpSubmit(true);
+        }}
+        
+          className="mt-6 mb-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold shadow-sm transition"
+        >
+          <FaCheckCircle className="inline mr-2" /> Mark as Delivered
+        </button>
+      )}
 
-                                        {/* If delivered, show full summary */}
-                                    
-                                            {order?.status?.toLowerCase() === "delivered" && (
-                                                <div className=" space-y-2 text-gray-800 text-sm">
-                                                    <p><span className="font-semibold">Items:</span> {order?.order_item?.map((item, i) => (
-                                                        <span key={item.order_item_id}>
-                                                            {item?.quantity} x {item?.items?.item_name}
-                                                            {i !== order?.order_item?.length - 1 && ', '}
-                                                        </span>
-                                                    ))}</p>
-                                                    <p><span className="font-semibold">Customer:</span> {order?.user?.name}</p>
-                                                    <p><span className="font-semibold">Vendor:</span> {truncateLetters(order?.vendor?.shop_name, 20)}</p>
-                                                    <p><span className="font-semibold">Delivered At:</span> {new Date(order?.updated_ts).toLocaleString()}</p>
-                                                    <p>
-                                                        <span className="font-semibold">Payment:</span>
-                                                        <span className={`ml-2 px-3 py-1 text-white rounded-full text-sm ${order.payment_mode === 'COD' ? 'bg-red-500' : 'bg-green-500'}`}>
-                                                            {order?.payment_mode}
-                                                        </span>
-                                                    </p>
-                                                    <h1 className='w-full p-2 border-green border-1 text-center bg-green-100'>Delivered</h1>
-                                                </div>
-                                            )}
-                                        
-                                      
-
-
-                                    </div>
-                                </div>
-
-                                {/* "Mark as Delivered" button if "on the way" */}
-                                {order?.status?.toLowerCase() === "on the way" && (
-                                    <button
-                                        onClick={handleDeliveredClick}
-                                        className="mt-6 mb-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold shadow-sm transition"
-                                    >
-                                        <FaCheckCircle className="inline mr-2" /> Mark as Delivered
-                                    </button>
-                                )}
-
-                                {/* OTP Submit Modal */}
-                                {showOtpSubmit && (
-                                    <div className="inset-0 z-50 backdrop-blur-sm bg-black/30 fixed flex justify-center items-center">
-                                        <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-sm space-y-4">
-                                            <h3 className="text-lg font-bold text-gray-700">Enter OTP</h3>
-
-                                            <input
-                                                type="text"
-                                                value={otp}
-                                                maxLength={6}
-                                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                                                className={`w-full border ${otp.length > 0 && otp.length !== 6 ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 outline-none`}
-                                                placeholder="Enter 6-digit OTP"
-                                            />
-
-                                            {otp.length > 0 && otp.length !== 6 && (
-                                                <p className="text-red-500 text-xs -mt-2">OTP must be 6 digits</p>
-                                            )}
-
-                                            <div className="flex justify-end gap-2 pt-2">
-                                                <button
-                                                    onClick={() => setShowOtpSubmit(false)}
-                                                    className="px-3 py-1 rounded bg-gray-300 text-gray-700"
-                                                >
-                                                    Cancel
-                                                </button>
-
-                                                <button
-                                                    onClick={async () => {
-                                                        if (!otp || otp.length !== 6) return;
-
-                                                        setSubmittingOtp(true);
-
-                                                        if (parseInt(otp) !== parseInt(order?.user_otp)) {
-                                                            setSubmittingOtp(false);
-                                                            toast.error("Invalid OTP. Please try again.");
-                                                            return;
-                                                        }
-
-                                                        const { success } = await updateOrderStatus(order?.order_id, 'delivered');
-                                                        if (success) {
-                                                            setShowOtpSubmit(false);
-                                                            setStatus("Delivered");
-                                                            onStatusUpdate?.(order?.order_id);
-                                                            toast.success("OTP verified. Delivery started.");
-                                                        } else {
-                                                            toast.error("Something went wrong. Try again.");
-                                                        }
-
-                                                        setSubmittingOtp(false);
-                                                    }}
-                                                    className={`px-3 py-1 rounded text-white ${otp.length === 6 ? 'bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
-                                                    disabled={otp.length !== 6 || submittingOtp}
-                                                >
-                                                    {submittingOtp ? "Submitting..." : "Submit"}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center text-gray-500 text-lg font-medium mt-10">
-                            📦 No active orders found
-                        </div>
-                    )}
+   
+    </div>
+  ))
+) : (
+  <div className="text-center text-gray-500 text-lg font-medium mt-10">
+    📦 No active orders found
+  </div>
+)}
 
 
-                </div>
+
+          </div>
+             {/* OTP Submit Modal */}
+      {showOtpSubmit && selectedOrder && (
+        <div className="inset-0 z-50 backdrop-blur-sm bg-black/30 fixed flex justify-center items-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-sm space-y-4">
+            <h3 className="text-lg font-bold text-gray-700">Enter OTP</h3>
+            <input
+              type="text"
+              value={otp}
+              maxLength={6}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+              className={`w-full border ${otp.length > 0 && otp.length !== 6 ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 outline-none`}
+              placeholder="Enter 6-digit OTP"
+            />
+            {otp.length > 0 && otp.length !== 6 && (
+              <p className="text-red-500 text-xs -mt-2">OTP must be 6 digits</p>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowOtpSubmit(false);
+                  setOtp("");
+                }}
+                className="px-3 py-1 rounded bg-gray-300 text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!otp || otp.length !== 6) return;
+                  setSubmittingOtp(true);
+                      if (parseInt(otp) !== parseInt(selectedOrder?.user_otp)) {
+                    console.log(selectedOrder?.user_otp)
+                    setSubmittingOtp(false);
+                    toast.error("Invalid OTP. Please try again.");
+                    return;
+                  }
+                  const { success } = await updateOrderStatus(selectedOrder?.order_id, 'delivered');
+                  if (success) {
+                    setShowOtpSubmit(false);
+                    setOtp("");
+                    setStatus("Delivered");
+                    onStatusUpdate?.(selectedOrder?.order_id);
+                    toast.success("OTP verified. Delivered.");
+                  } else {
+                    toast.error("Something went wrong. Try again.");
+                  }
+                  setSubmittingOtp(false);
+                }}
+                className={`px-3 py-1 rounded text-white ${otp.length === 6 ? 'bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
+                disabled={otp.length !== 6}
+                  >
+                    {                    console.log(selectedOrder?.user_otp)
+                    }
+                {submittingOtp ? "Submitting..." : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
             </div>
             <BottomNav />
         </div>

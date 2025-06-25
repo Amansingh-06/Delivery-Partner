@@ -20,8 +20,6 @@ import { BsCalendar2Date } from "react-icons/bs";
 import {
     nameValidation,
     nameKeyDownHandler,
-    shopNameValidation,
-    shopNameKeyDownHandler,
     InputCleanup,
     streetValidation,
     streetKeyDown,
@@ -190,9 +188,9 @@ const Registration = () => {
             {loading && <Loader/>}
             <div className="w-full max-w-2xl   space-y-4     bg-white ">
                 <Header title='Registration'/>
-                <div className='max-w-2xl  px-4 py-15 mt-15 shadow-lg'>
+                <div className='max-w-2xl  md:px-4 px-3 py-15 mt-15 shadow-lg'>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl  ">
-                        <div className='flex-col flex gap-8 px-6  py-8 rounded-2xl shadow-lg '>
+                        <div className='flex-col flex gap-8 md:px-6 px-4  py-8 rounded-2xl shadow-lg '>
                             <h1 className='text-2xl font-semibold text-gray-500'>Basic Details</h1>
                             <InputField
                                 id="name"
@@ -302,10 +300,10 @@ const Registration = () => {
                                     <div className="flex md:gap-8 gap-3 flex-col md:flex-row w-full h-40">
 
                                         {/* Photo Preview */}
-                                        <div className="border-2 flex-1 border-dashed border-gray-400 rounded bg-white flex items-center justify-center relative overflow-hidden">
+                                        <div className="border-2 flex-1 border-dashed  border-gray-400 rounded bg-white flex items-center justify-center relative overflow-hidden">
                                             {photoPreview ? (
                                                 <>
-                                                    <img src={photoPreview} alt="Preview" className="object-cover w-28 h-36 rounded" />
+                                                    <img src={photoPreview} alt="Preview" className="object-cover w-28 h-32 rounded" />
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {

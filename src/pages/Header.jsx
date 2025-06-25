@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useState} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../utils/auth';
 import { useAuth } from '../Context/authContext';
@@ -6,13 +6,17 @@ import { MdOutlineFastfood } from "react-icons/md";
 import { GiChickenOven, GiFrenchFries, GiFullPizza } from 'react-icons/gi';
 import { FaIceCream } from 'react-icons/fa';
 import { PiBowlFood } from 'react-icons/pi';
+import Loader from '../components/Loader';
 
 const Header = ({ title = "Registration" }) => {
+    const [loggingOut, setLoggingOut] = useState(false);
+
     const location = useLocation();
     const { setSession } = useAuth();
     const navigate = useNavigate();
 
     return (
+        <>
         <div className="fixed w-full top-0 z-20 backdrop-blur-sm rounded-b-lg max-w-2xl p-2 ">
             <div className="absolute inset-0 rotate-180 overflow-hidden">
                 <svg
@@ -88,16 +92,23 @@ const Header = ({ title = "Registration" }) => {
                 </h1>
 
                 {location.pathname === "/profile" && (
-                    <button
-                        aria-label="Logout"
-                        onClick={() => logout(setSession, navigate)}
-                        className="absolute top-6 right-4 bg-white text-black px-3 py-1 text-sm rounded-md shadow"
-                    >
-                        Logout
-                    </button>
+  <button
+    aria-label="Logout"
+    onClick={() => logout(setSession, setLoggingOut)}
+    disabled={loggingOut}
+    className={`absolute top-6 right-4 px-3 py-1 text-sm rounded-md shadow
+      ${loggingOut ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-white text-black"}`}
+  >
+    {loggingOut ? "Logging out..." : "Logout"}
+  </button>
                 )}
+                
+
             </div>
-        </div>
+            </div>
+            {loggingOut && <Loader/>}
+
+            </>
     );
 };
 

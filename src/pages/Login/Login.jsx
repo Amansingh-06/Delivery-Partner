@@ -164,13 +164,13 @@ const Login = () => {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row items-center min-h-screen h-full bg-white overflow-hidden">
+        <div className="flex flex-col lg:flex-row items-center min-h-screen h-[100dvh] bg-white overflow-hidden">
             {/* Image */}
             <div className="w-full lg:w-[68%] overflow-hidden">
                 <img
                     src={LoginBGimage}
                     alt="Login Visual"
-                    className="object-cover w-full h-[68vh] lg:h-screen"
+                    className="object-cover w-full h-[58vh] lg:h-screen"
                 />
             </div>
 
@@ -178,7 +178,7 @@ const Login = () => {
             <form
                 onSubmit={handleSubmit(onSubmit)}
                 className="relative p-4 lg:p-10 w-full lg:w-[32%] rounded-t-3xl lg:rounded-t-[0px] flex flex-col items-start justify-center ml-0 lg:-ml-5 bg-white overflow-y-auto max-h-screen lg:h-screen -mt-5 lg:mt-0"
-                style={{ minHeight: "42vh" }}
+                style={{ minHeight: "32vh" }}
             >
                 {/* Floating Food Icons */}
                 <div>
@@ -198,12 +198,13 @@ const Login = () => {
 
                 </div>
 
-                <p className=" text-[13px] lg:text-base mb-3 text-slate-700 font-semibold">
-                    Try Xtra Affordable & Tasty Foods With XMeals
-                </p>
-                <h2 className="text-lg md:text-2xl lg:text-2xl font-medium text-slate-700  mb-1 lg:mb-3 ">
-                    Enter Your Mobile Number
-                </h2>
+                <h2 className="text-xl md:text-2xl lg:text-2xl font-medium text-gray  mb-3 ">
+          ENTER YOUR NUMBER
+        </h2>
+        <p className=" text-sm mb-3 text-gray font-medium">
+          Try Xtra Affordable & Tasty Foods With XMeals.
+        </p>
+
 
                 {/* Phone Input */}
                 <div className="flex w-full">
@@ -212,7 +213,7 @@ const Login = () => {
                             type="button"
                             onClick={() => setShowCountryDropdown(!showCountryDropdown)}
                             className={`flex items-center justify-center p-3.5 rounded-l-lg border text-slate-700 border-r-0
-                                ${isValid ? "border-green" : "border-slate-700"}
+                                ${isValid ? "border-green" : "border-gray"}
   `}
                         >
                             <span className="font-medium">{selectedCountryCode}</span>
@@ -235,16 +236,16 @@ const Login = () => {
                         {/* Country code dropdown */}
                         {showCountryDropdown && (
                             <div
-                                className={`absolute z-10 w-48 mt-1 overflow-scroll bg-white text-slate-700 rounded-md shadow-lg max-h-60 border border-slate-700`}
+                            className={`absolute z-10 w-48 mt-1 overflow-scroll scrollbar-hide bg-white text-gray-700 rounded-md shadow-lg max-h-60 border border-gray-300`}
                             >
                                 <ul className="py-1">
                                     {countryCodes.map((country) => (
                                         <li key={country.code}>
                                             <button
                                                 type="button"
-                                                className={`w-full text-left px-4 py-3 hover:bg-orange-100 ${selectedCountryCode === country.code
-                                                    ? "bg-orange-100"
-                                                    : ""
+                                                className={`w-full text-left px-4 py-3 hover:bg-gray-100 ${selectedCountryCode === country?.code
+                                                    ? "bg-blue-100"
+                                                        : ""
                                                     }`}
                                                 onClick={() => {
                                                     setSelectedCountryCode(country.code);
@@ -280,16 +281,16 @@ const Login = () => {
                         onInput={(e) => {
                             e.target.value = e.target.value.replace(/[^0-9]/g, "");
                         }}
-                        style={{ border: '1px solid #808080' }}
+                        // style={{ border: '1px solid #808080' }}
 
-                        className={`w-full rounded-r-lg p-3 text-slate-700border text-lg mb-2 placeholder-gray-400 focus:outline-none transition duration-300 focus:ring-2
+                        className={`w-full rounded-r-lg p-3 border text-lg mb-2 placeholder-gray-400 focus:outline-none transition duration-300 focus:ring-2
                             ${errors.phoneNumber
-                                ? "border-red-500 focus:ring-red-500"
-                                : isValid
-                                    ? "border-green-500 focus:ring-green-500"
-                                    : "border-gray focus:border-orange  focus:ring-orange-500"
+                                                        ? "border-red-500 focus:ring-red-500"
+                                                        : isValid
+                                                            ? "border-green-500 focus:ring-green-500"
+                                                            : "border-gray focus:border-orange  focus:ring-orange-500"
                                                     }`}
-                    />
+                                            />
                 </div>
                 {errors.phoneNumber && (
                     <p className="text-red-500 text-sm mb-3">
@@ -308,9 +309,9 @@ const Login = () => {
                         }
                     }}
                     className={`flex items-center mt-3 justify-center gap-2 w-full py-3 rounded-xl text-lg font-semibold transition duration-300 ${sendingOtp || !isValid
-                        ? 'bg-orange-200 cursor-not-allowed text-white z-50'
-                        : 'bg-primary hover:bg-primary cursor-pointer hover:scale-95 text-white z-50'
-                        }`}
+                        ? 'bg-orange/50 cursor-not-allowed opacity-70 text-white'
+                        : 'button-primary hover:buttonHover-primary cursor-pointer hover:scale-95 text-white bg-orange'
+                      }`}
                     disabled={sendingOtp} // Only actually disable when sending OTP
                 >
                     Continue

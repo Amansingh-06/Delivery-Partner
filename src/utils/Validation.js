@@ -3,10 +3,8 @@
 export const nameValidation = {
     required: "Name is required",
     validate: (value) => {
-        if (!/^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value.trim())) {
-            return "Only characters and single spaces (not at start)";
-        }
-        if (value.replace(/\s/g, "").length < 3) {
+        const onlyLetters = value.replace(/\s/g, ""); // remove spaces
+        if (onlyLetters.length < 3) {
             return "At least 3 letters required (excluding spaces)";
         }
         return true;
@@ -16,13 +14,8 @@ export const nameValidation = {
 export const nameKeyDownHandler = (e) => {
     const key = e.key;
     const isLetter = /^[a-zA-Z]$/.test(key);
-    const allowedKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete'];
-    const isSpaceAllowed =
-        key === ' ' && /^[a-zA-Z]$/.test(e.currentTarget.value.slice(-1));
-    if (!(isLetter || allowedKeys.includes(key) || isSpaceAllowed)) {
-        e.preventDefault();
-    }
-    if (key === ' ' && e.currentTarget.value.length === 0) {
+    const allowedKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', ' ']; // space allowed
+    if (!(isLetter || allowedKeys.includes(key))) {
         e.preventDefault();
     }
 };
@@ -68,16 +61,23 @@ export const streetValidation = {
     },
 };
 export const streetKeyDown = (e) => {
-    const allowed = ["Backspace", "ArrowLeft", "ArrowRight", "Tab", "Delete"];
-    if (!allowed.includes(e.key) && !/^[a-zA-Z0-9 ,.\-#\/']$/.test(e.key)) e.preventDefault();
-    if (e.key === " " && e.currentTarget.selectionStart === 0) e.preventDefault();
+    const allowed = ["Backspace", "ArrowLeft", "ArrowRight", "Tab", "Delete", " "];
+    const validChar = /^[a-zA-Z0-9 ,.\-#\/']$/;
+
+    if (e.key === " " && e.currentTarget.selectionStart === 0) {
+        e.preventDefault(); // space not allowed at start
+    }
+
+    if (!allowed.includes(e.key) && !validChar.test(e.key)) {
+        e.preventDefault(); // block any other invalid character
+    }
 };
   
 export const streetInputClean = (e) => {
     e.currentTarget.value = e.currentTarget.value
-        .replace(/[^a-zA-Z0-9 ,.\-#\/']/g, "")
-        .replace(/^\s+/, "")
-        .replace(/\s{2,}/g, " ");
+        .replace(/[^a-zA-Z0-9 ,.\-#\/']/g, "") // only allowed characters
+        .replace(/^\s+/, "");                  // remove starting space only
+    // .replace(/\s{2,}/g, " "); // <- ye line ab hata di gayi (double space allow)
 };
   
 // 🌆 CITY & STATE (Only letters + spaces)
@@ -86,20 +86,28 @@ export const cityStateValidation = {
     validate: (value) => {
         if (!value.trim()) return "This field is required";
         if (/^\s/.test(value)) return "Cannot start with space";
-        if (!/^[A-Za-z]+(\s[A-Za-z]+)*$/.test(value)) return "Only letters and single spaces allowed";
+        if (!/^[A-Za-z ]+$/.test(value)) return "Only letters and spaces allowed";
         return true;
     },
 };
+
 export const cityStateKeyDown = (e) => {
-    const allowed = ["Backspace", "ArrowLeft", "ArrowRight", "Tab", "Delete"];
-    if (!allowed.includes(e.key) && !/^[a-zA-Z ]$/.test(e.key)) e.preventDefault();
-    if (e.key === " " && e.currentTarget.selectionStart === 0) e.preventDefault();
+    const allowed = ["Backspace", "ArrowLeft", "ArrowRight", "Tab", "Delete", " "];
+    const validChar = /^[a-zA-Z ]$/;
+
+    if (e.key === " " && e.currentTarget.selectionStart === 0) {
+        e.preventDefault(); // no space at start
+    }
+
+    if (!allowed.includes(e.key) && !validChar.test(e.key)) {
+        e.preventDefault(); // block anything other than letters or space
+    }
 };
 export const cityStateInputClean = (e) => {
     e.currentTarget.value = e.currentTarget.value
-        .replace(/[^a-zA-Z ]/g, "")
-        .replace(/^\s+/, "")
-        .replace(/\s{2,}/g, " ");
+        .replace(/[^a-zA-Z ]/g, "")  // only letters and space
+        .replace(/^\s+/, "");        // remove leading spaces
+    // .replace(/\s{2,}/g, " ");    // this line removed to allow multiple spaces
 };
   
 // 🔢 PINCODE
@@ -111,13 +119,19 @@ export const pincodeValidation = {
     },
 };
 export const pincodeKeyDown = (e) => {
-    const allowed = ["Backspace", "ArrowLeft", "ArrowRight", "Tab", "Delete"];
-    if (!allowed.includes(e.key) && !/^[0-9]$/.test(e.key)) e.preventDefault();
+    const allowedKeys = ["Backspace", "ArrowLeft", "ArrowRight", "Tab", "Delete", " "];
+    const isDigit = /^[0-9]$/.test(e.key);
+
+    if (!isDigit && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+    }
 };
+
 export const pincodeInputClean = (e) => {
-    e.currentTarget.value = e.currentTarget.value.replace(/\D/g, "").slice(0, 6);
+    const digitsOnly = e.currentTarget.value.replace(/[^0-9]/g, ""); // remove spaces and non-digits
+    const trimmed = digitsOnly.slice(0, 6); // max 6 digits
+    e.currentTarget.value = trimmed;
 };
-  
 //Preparation Time
 export const preparationTimeValidation = {
     required: "Preparation time is required",
