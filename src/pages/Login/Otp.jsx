@@ -30,6 +30,7 @@ import {
     logout,
 } from "../../utils/auth";
 import ResendButton from "../../components/ResendButton";
+import { Loader } from "lucide-react";
 
 const Otp = () => {
     const navigate = useNavigate();
@@ -116,8 +117,10 @@ const Otp = () => {
     const [authenticating, setAuthenticating] = useState(false);
 
     /********************    verify otp ********************/
+const [loading,setLoading]=useState(false)
 
     const onSubmit = async (data, event) => {
+        setLoading(true)
         try {
             if (authenticating) return;
             setAuthenticating(true);
@@ -155,6 +158,7 @@ const Otp = () => {
             handleAuthError(error);
         } finally {
             setAuthenticating(false);
+            setLoading(false)
         }
     };
     console.log("Phone received:", location?.state?.phone);
@@ -398,7 +402,7 @@ const Otp = () => {
                     </button>
                 </div>
             </form>
-
+{loading && <Loader/>}
         </div>
     );
 };

@@ -14,20 +14,22 @@ import { updateOrderStatus } from '../utils/updateOrderStauts';
 import { truncateLetters } from '../constant/constants';
 
 export default function DPHomePage() {
-    const { dpProfile, session } = useAuth();
-    const dpId = "43c6aeba-34e0-4ad7-9caf-9eb661b2e043"; // fallback
-    const LIMIT = 5;
+  const { dpProfile, session } = useAuth();
+  const dpId = "43c6aeba-34e0-4ad7-9caf-9eb661b2e043"; // fallback
+  const LIMIT = 5;
   
-    const [showOtpSubmit, setShowOtpSubmit] = useState(false);
-    const [isOnline, setIsOnline] = useState(null);
-    const [status, setStatus] = useState("Pick up");
-    const [orders, setOrders] = useState([]);
-    const [offset, setOffset] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
-    const [isLoading, setIsLoading] = useState(false);
-    const [otp, setOtp] = useState('')
+  const [showOtpSubmit, setShowOtpSubmit] = useState(false);
+  const [isOnline, setIsOnline] = useState(null);
+  const [status, setStatus] = useState("Pick up");
+  const [orders, setOrders] = useState([]);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [otp, setOtp] = useState('')
   const [submittingOtp, setSubmittingOtp] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const {selectedDpId} = useAuth()
+  const DpId = dpProfile?.dp_id || selectedDpId; // ✅ fallback
 
   
     const observer = useRef();
@@ -41,7 +43,7 @@ export default function DPHomePage() {
         const { data, error } = await supabase
           .from("delivery_partner")
           .select("available")
-          .eq("u_id", session.user.id)
+          .eq("dp_id", DpId)
           .single();
   
         if (error) {
@@ -55,7 +57,7 @@ export default function DPHomePage() {
   
       console.log("🔄 Fetching availability...");
       fetchAvailability();
-    }, [session?.user?.id]);
+    }, [DpId]);
   
     // ✅ Toggle Online/Offline
     const handleToggleOnline = async (value) => {
@@ -63,7 +65,7 @@ export default function DPHomePage() {
       const { error } = await supabase
         .from("delivery_partner")
         .update({ available: value })
-        .eq("u_id", session.user.id);
+        .eq("dp_id", DpId);
   
       if (error) {
         toast.error("Could not update status");
@@ -155,11 +157,32 @@ export default function DPHomePage() {
     const DEFAULT_PHOTO = "./defaultuserImage.jpg";
 
     return (
-        <div className="mx-auto  min-h-[88vh]  text-gray-800 ">
-            <div className='max-w-2xl space-y-6 mx-auto  shadow-lg'>
-                <Header title='Order' />
+        <div className="mx-auto    text-gray-800 ">
+            <div className='max-w-2xl  mx-auto    shadow-lg'>
+                {/* <Header title='Order' /> */}
+{dpProfile?.status !=='verified' ? ( <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-md mt-20">
+              <h2 className="font-semibold text-lg text-center mb-2">
+                Account Status
+              </h2>
+  
+              <p className="mb-2">
+                <strong>Status:</strong>{" "}
+                {dpProfile?.status === "not_verified"
+                  ? "Not Verified"
+                  : dpProfile?.status}
+            </p>
+            <p>Your account verification is under process. Please wait.</p>
 
-                <div className='max-w-2xl mx-auto md:p-6 p-3 md:mt-25 mt-13 py-15 shadow-lg rounded-2xl min-h-[85vh]  mb-15'>
+  
+              {/* {vendorProfile?.request_status === "NA" ? (
+              ) : (
+                <p>
+                  <strong>Rejected:</strong> {vendorProfile?.request_status}
+                </p>
+              )} */}
+          </div>) : (
+              <>
+                <div className='max-w-2xl  mx-auto md:p-6 p-3 md:mt-15 mt-5 py-15 min-h-[85vh]   '>
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4 ">
                             <img src={dpProfile?.photo_url || DEFAULT_PHOTO} alt="Profile" className="w-14 h-14 rounded-full shadow-md" />
@@ -317,6 +340,9 @@ export default function DPHomePage() {
 
 
           </div>
+              </>
+            )}
+                
              {/* OTP Submit Modal */}
       {showOtpSubmit && selectedOrder && (
         <div className="inset-0 z-50 backdrop-blur-sm bg-black/30 fixed flex justify-center items-center">

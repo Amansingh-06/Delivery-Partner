@@ -128,12 +128,12 @@ const Registration = () => {
             const { error: insertError } = await supabase
                 .from('delivery_partner')
                 .insert([{
-                    name: data.name,
-                    dob: data.dob,
-                    city: data.city,
-                    street: data.Street,
-                    state: data.state,
-                    pincode: data.pincode,
+                    name: data?.name.trim(),
+                    dob: data?.dob.trim(),
+                    city: data?.city.trim(),
+                    street: data?.Street.trim(),
+                    state: data?.state.trim(),
+                    pincode: data?.pincode.trim(),
                     photo_url: photoUrl,
                     id_url: idUrls, // ✅ Pass array directly
                     created_ts: new Date().toISOString(),

@@ -17,7 +17,7 @@ export default function DpProfile() {
     const [photoFile, setPhotoFile] = useState(null);
     const [idFiles, setIdFiles] = useState([]); // ✅ array of files
 
-    const { session, dpProfile, setdpProfile } = useAuth();
+    const { session, dpProfile, setdpProfile ,selectedDpId} = useAuth();
     const photoInputRef = useRef(null);
     const idInputRef = useRef(null);
 
@@ -93,6 +93,7 @@ export default function DpProfile() {
         const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
         return urlData.publicUrl;
     };
+    const DpId = dpProfile?.dp_id || selectedDpId; // ✅ fallback
 
     useEffect(() => {
         async function fetchData() {
@@ -102,7 +103,7 @@ export default function DpProfile() {
             const { data, error } = await supabase
                 .from('delivery_partner')
                 .select('*')
-                .eq('u_id', session.user.id)
+                .eq('dp_id', DpId)
                 .single();
 
             if (data) {
@@ -150,8 +151,8 @@ export default function DpProfile() {
             }
 
             const payload = {
-                u_id: session?.user?.id,
-                dp_id: dpProfile?.dp_id,
+                u_id: dpProfile?.u_id,
+                dp_id: DpId,
                 name: formData.name,
                 dob: formData.dob,
                 street: formData.street,
@@ -164,7 +165,7 @@ export default function DpProfile() {
 
             const { data, error } = await supabase
                 .from('delivery_partner')
-                .upsert(payload, { onConflict: 'u_id' })
+                .upsert(payload, { onConflict: 'dp_id' })
                 .select()
                 .single(); // ✅ ye updated data return karega
           
@@ -185,9 +186,9 @@ export default function DpProfile() {
     };
 
     return (
-        <div className='max-w-2xl mx-auto mb-12 pt-13'>
-            <Header title='Profile'/>
-            <div className="max-w-2xl mx-auto mt-10 bg-white p-6 mb-10  shadow-xl border border-gray-200">
+        <div className='max-w-2xl mx-auto   '>
+            {/* <Header title='Profile'/> */}
+            <div className="max-w-2xl mx-auto mt-10 border pt-12 bg-white p-6  min-h-[88vh]  shadow-xl  border-gray-200">
 {loading && <Loader/>}
                 {/* <h2 className="text-3xl font-semibold mb-6 text-indigo-700 border-b pb-2">Delivery Partner Profile</h2> */}
 
