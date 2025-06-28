@@ -30,7 +30,7 @@ import {
     logout,
 } from "../../utils/auth";
 import ResendButton from "../../components/ResendButton";
-import { Loader } from "lucide-react";
+import Loader from "../../components/Loader";
 
 const Otp = () => {
     const navigate = useNavigate();
@@ -402,7 +402,7 @@ const [loading,setLoading]=useState(false)
                     </button>
                 </div>
             </form>
-{loading && <Loader/>}
+{loading && <Loader/> }
         </div>
     );
 };

@@ -17,7 +17,7 @@ const Header = ({ title = "Registration" }) => {
 
     return (
         <>
-<div className="fixed top-0 left-1/2 transform -translate-x-1/2 z-20 py-2 w-full max-w-2xl backdrop-blur-sm rounded-b-lg font-family-poppins">
+<div className="fixed top-0 left-1/2 transform -translate-x-1/2 z-20  w-full max-w-2xl backdrop-blur-sm rounded-b-lg font-family-poppins">
 <div className="absolute inset-0 rotate-180 overflow-hidden">
                 <svg
                     className="absolute top-0 left-0 w-full h-full"
@@ -87,20 +87,24 @@ const Header = ({ title = "Registration" }) => {
 
             {/* Title and Logout */}
             <div className="relative z-10 flex items-center justify-center p-5">
-                <h1 className="text-3xl font-bold md:text-left text-center text-white">
+                <h1 className="text-2xl font-bold md:text-left text-center text-white">
                     {title}
                 </h1>
 
                 {location.pathname === "/profile" && (
-  <button
-    aria-label="Logout"
-    onClick={() => logout(setSession, setLoggingOut)}
-    disabled={loggingOut}
-    className={`absolute top-6 right-4 px-3 py-1 text-sm rounded-md shadow
-      ${loggingOut ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-white text-black"}`}
-  >
-    {loggingOut ? "Logging out..." : "Logout"}
-  </button>
+                    <button
+  aria-label="Logout"
+  onClick={() => logout(setSession, setLoggingOut)}
+  disabled={loggingOut}
+  className={`absolute top-6 right-4 px-4 py-2 text-sm font-medium rounded-md shadow-md transition-all duration-300
+    ${
+      loggingOut
+        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+        : "bg-green-500 text-white hover:bg-orange-600 hover:shadow-lg"
+    }`}
+>
+  {loggingOut ? "Logging out..." : "Logout"}
+</button>
                 )}
                 
 

@@ -1,6 +1,6 @@
 import React, { useState,useEffect } from 'react';
 import { useForm,Controller } from 'react-hook-form';
-import { X } from 'lucide-react';
+import { Watch, X } from 'lucide-react';
 import InputField from '../components/InputField';
 import Header from './Header';
 import Loader from '../components/Loader';
@@ -39,7 +39,9 @@ const Registration = () => {
         handleSubmit,
         control,
         formState: { errors, isValid },
-        trigger
+        trigger,
+        watch
+        
     } = useForm({ mode: 'onChange' });
 
     const { setCameFromUserDetailsPage } = useAuth();
@@ -98,6 +100,15 @@ const Registration = () => {
         }
 
         return urlData?.publicUrl;
+    };
+
+    const watchfields = {
+        name: watch('name'),
+        dob: watch('dob'),
+        city: watch('city'),
+        street: watch('street'),
+        state: watch('state'),
+        pincode: watch('pincode'),
     };
 
     const onSubmit = async (data) => {
@@ -184,14 +195,14 @@ const Registration = () => {
     
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center  ">
+        <div className="min-h-screen  flex items-center justify-center  ">
             {loading && <Loader/>}
             <div className="w-full max-w-2xl   space-y-4     bg-white ">
                 <Header title='Registration'/>
-                <div className='max-w-2xl  md:px-4 px-3 py-15 mt-15 shadow-lg'>
+                <div className='max-w-2xl  md:px-4 px-3 bg-gray-100 py-15 mt-7 shadow-lg'>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl  ">
-                        <div className='flex-col flex gap-8 md:px-6 px-4  py-8 rounded-2xl shadow-lg '>
-                            <h1 className='text-2xl font-semibold text-gray-500'>Basic Details</h1>
+                        <div className='flex-col flex gap-6 md:px-6 px-4 bg-white  py-6 rounded-lg shadow-lg '>
+                            <h1 className='text-xl font-medium text-gray-500'>Basic Details</h1>
                             <InputField
                                 id="name"
                                 type='text'
@@ -202,6 +213,7 @@ const Registration = () => {
                                 error={errors.name}
                                 onInput={InputCleanup}
                                 onKeyDown={nameKeyDownHandler}
+                                value={watchfields.name}
                             />
 
 <InputField
@@ -210,6 +222,7 @@ const Registration = () => {
                                 type="date"
                                 placeholder="Date of Birth"
                                 name="dob"
+                                value={watchfields.dob}
                                 register={register}
                                 validation={{
                                     required: 'Date of Birth is required',
@@ -247,12 +260,14 @@ const Registration = () => {
                                     register={register}
                                     validation={streetValidation}
                                     error={errors.Street}
+                                    value={watchfields.street}
                                     onKeyDown={streetKeyDown}
                                     onInput={streetInputClean}
                                 />
                                 <InputField
                                     type='text'
                                     icon={PiCityLight}
+                                    value={watchfields.city}
 
                                     id="city"
                                     placeholder="City"
@@ -266,6 +281,7 @@ const Registration = () => {
                                 <InputField
                                     type='text'
                                     icon={PiMapPinAreaLight}
+                                    value={watchfields.state}
 
                                     id="state"
                                     placeholder="State"
@@ -278,6 +294,7 @@ const Registration = () => {
                                 />
                                 <InputField
                                     icon={TbMapPinCode}
+                                    value={watchfields.pincode}
 
                                     type='text'
                                     id="pincode"
@@ -290,13 +307,13 @@ const Registration = () => {
                                 />
                             </div>
                         </div>
-                        <div className='flex-col flex gap-8 px-6 py-4 rounded-2xl shadow-lg  '>
+                        <div className='flex-col flex gap-6 bg-white px-6 py-4 rounded-lg shadow-lg  '>
                             <div className="flex flex-col md:flex-row gap-8 ">
                                 {/* Upload Photo */}
 
-                                <div className="flex flex-col gap-8 w-full">
+                                <div className="flex flex-col gap-6 w-full">
                                     {/* === Upload Photo === */}
-                                    <label className="block -mb-1 mt-4 font-semibold text-gray-500">Upload Photo</label>
+                                    <label className="block  font-semibold text-gray-500">Upload Photo</label>
                                     <div className="flex md:gap-8 gap-3 flex-col md:flex-row w-full h-40">
 
                                         {/* Photo Preview */}
@@ -326,7 +343,7 @@ const Registration = () => {
                                         {/* Select Photo Button */}
                                         <label
                                             htmlFor="photo"
-                                            className={`md:flex-1 bg-${photoSelected ? 'gray-500' : 'green-600'} hover:bg-${photoSelected ? 'gray-600' : 'green-700'} text-white rounded p-2 flex items-center justify-center cursor-pointer font-semibold text-base transition select-none`}
+                                            className={`md:flex-1 bg-${photoSelected ? 'gray-500' : 'orange-300'} hover:bg-${photoSelected ? 'gray-600' : 'orange-400'} text-white rounded p-2 flex items-center justify-center cursor-pointer font-semibold text-base transition select-none`}
                                         >
                                             {photoSelected ? 'Photo Selected' : 'Select Photo'}
                                         </label>
@@ -424,7 +441,7 @@ const Registration = () => {
 <button
     type="button"
                                                 onClick={() => document.getElementById('id').click()}
-                                                className={`md:flex-1 w-full ${idFile?.length > 0 ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-600 hover:bg-green-700'
+                                                className={`md:flex-1 w-full ${idFile?.length > 0 ? 'bg-gray-500 hover:bg-gray-600' : 'bg-orange-300 hover:bg-orange-400'
                                                     } text-white font-semibold px-4 py-2 rounded transition select-none`}
                                             >
                                                 {idFile?.length > 0 ? `${idFile.length} ID(s) Selected` : 'Select ID(s)'}
@@ -438,12 +455,12 @@ const Registration = () => {
                             </div>
                         </div>
 
-                        <div className="pt-2 py-3 rounded-2xl shadow-lg px-6">
+                        <div className=" rounded-lg shadow-lg ">
                             <button
                                 type="submit"
                                 onClick={() => trigger()} // ✅ Show validation error on click
                                 className={`w-full text-white font-semibold py-2 rounded-md transition-all
-    ${isValid ? 'bg-primary hover:bg-orange-600 cursor-pointer' : 'bg-gray-400 cursor-not-allowed'}`}
+    ${isValid ? 'bg-orange hover:bg-orange-600 cursor-pointer' : 'bg-gray-400 cursor-not-allowed'}`}
                             >
                                 Create Account
                             </button>

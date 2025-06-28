@@ -11,7 +11,8 @@ function InputField({
     onInput,
     onFocus,       // ✅ NEW
     max,           // ✅ NEW
-    type = 'text'
+    type = 'text',
+    value
 }) {
     return (
         <div className="relative">
@@ -25,11 +26,18 @@ function InputField({
                 onInput={onInput}
                 onFocus={onFocus}         // ✅ NEW
                 max={max}                 // ✅ NEW
-                className="peer pl-10 pt-3 pb-3 w-full rounded border border-gray-300 focus:outline-none focus:border-orange transition-all placeholder-transparent"
-            />
+                className={`peer pl-10 pt-3 pb-3 w-full rounded border text-gray-800 transition-all placeholder-transparent
+                    ${
+                      error
+                        ? "border-red-500 focus:border-red-500"
+                        : value
+                        ? "border-green-500 focus:border-green-500"
+                        : "border-gray-300 focus:border-gray-400"
+                    }
+                    focus:outline-none`}            />
             <label
                 htmlFor={id}
-                className="absolute left-10 -top-2.5 text-sm bg-white text-black transition-all 
+                className="absolute left-10 -top-2.5 text-sm bg-white text-gray-500 transition-all 
           peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-500 
           peer-focus:-top-2.5 peer-focus:text-sm peer-focus:font-semibold 
           peer-not-placeholder-shown:font-semibold"

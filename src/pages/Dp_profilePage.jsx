@@ -289,7 +289,7 @@ export default function DpProfile() {
                             <button
                                 type="button"
                                 onClick={() => photoInputRef.current.click()}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 mt-2 rounded-md transition"
+                                className="bg-orange-300 hover:bg-orange-400 text-white font-medium px-4 py-2 mt-2 rounded-md transition"
                             >
                                 Select Photo
                             </button>
@@ -327,7 +327,7 @@ export default function DpProfile() {
                                                     href={fileUrl}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-indigo-600 underline hover:text-indigo-800 text-sm"
+                                                    className="text-green underline hover:text-indigo-800 text-sm"
                                                 >
                                                     🔗 View PDF
                                                 </a>
@@ -349,7 +349,7 @@ export default function DpProfile() {
                             <button
                                 type="button"
                                 onClick={() => idInputRef.current.click()}
-                                className="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-md transition"
+                                className="bg-orange-300 hover:bg-orange-400 text-white font-medium px-4 py-2 rounded-md transition"
                             >
                                 Select ID Proof
                             </button>
@@ -371,7 +371,7 @@ export default function DpProfile() {
                         disabled={loading || !isChanged}
                         className={`w-full py-3 rounded-md font-semibold transition ${loading || !isChanged
                             ? 'bg-gray-400 text-white cursor-not-allowed'
-                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                            : 'bg-orange-600 hover:bg-orange-700 text-white font-medium'
                             }`}
                     >
                         {loading ? 'Saving...' : 'Save Changes'}

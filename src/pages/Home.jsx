@@ -158,9 +158,9 @@ export default function DPHomePage() {
 
     return (
         <div className="mx-auto    text-gray-800 ">
-            <div className='max-w-2xl  mx-auto    shadow-lg'>
+            <div className='max-w-2xl  mx-auto p-2 border-2 min-h-[85vh]   shadow-lg'>
                 {/* <Header title='Order' /> */}
-{dpProfile?.status !=='verified' ? ( <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-md mt-20">
+{dpProfile?.status !=='verified' ? ( <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-md mt-12">
               <h2 className="font-semibold text-lg text-center mb-2">
                 Account Status
               </h2>
@@ -182,7 +182,7 @@ export default function DPHomePage() {
               )} */}
           </div>) : (
               <>
-                <div className='max-w-2xl  mx-auto md:p-6 p-3 md:mt-15 mt-5 py-15 min-h-[85vh]   '>
+                <div className='max-w-2xl  mx-auto md:p-6 p-3 md:mt-15 mt-5 py-10 min-h-[85vh]   '>
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4 ">
                             <img src={dpProfile?.photo_url || DEFAULT_PHOTO} alt="Profile" className="w-14 h-14 rounded-full shadow-md" />

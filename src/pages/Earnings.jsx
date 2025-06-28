@@ -1,67 +1,31 @@
 import React, { useState, useEffect } from "react";
+import { BsCalendarDate } from "react-icons/bs";
+
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import { useAuth } from "../Context/authContext";
 import {
   isWithinInterval,
-  format,
   startOfWeek,
   endOfWeek,
   startOfMonth,
   endOfMonth,
+  format
 } from "date-fns";
 import Header from "./Header";
 import BottomNav from "../components/Footer";
-
-// Dummy orders (you can add more)
-const dummyOrders = [
-  {
-    id: 1,
-    status: "delivered",
-    created_ts: "2025-06-26T10:00:00Z",
-    transaction: { amount: 120 },
-  },
-  {
-    id: 2,
-    status: "rejected",
-    created_ts: "2025-06-24T09:00:00Z",
-    transaction: { amount: 60 },
-  },
-  {
-    id: 3,
-    status: "delivered",
-    created_ts: "2025-06-20T08:00:00Z",
-    transaction: { amount: 200 },
-  },
-  {
-    id: 4,
-    status: "delivered",
-    created_ts: "2025-06-02T12:30:00Z",
-    transaction: { amount: 300 },
-  },
-];
-
-// Dummy reviews
-const dummyRatings = Array.from({ length: 12 }, (_, i) => ({
-  r_id: i + 1,
-  rating_number: Math.floor(Math.random() * 5) + 1,
-  user: {
-    name: `User ${i + 1}`,
-    dp_url: "https://via.placeholder.com/40",
-  },
-  order: {
-    total_amount: Math.floor(Math.random() * 300) + 50,
-    order_item: [
-      { items: { item_name: "Item A" } },
-      { items: { item_name: "Item B" } },
-    ],
-  },
-}));
+import { supabase } from "../utils/Supabase"; // 👈 import your Supabase client
+import { subscribeToRealtimeOrders } from "../utils/subscribeToRealtimeOrders"; // 👈 import your realtime util
 
 export default function Earnings() {
-  const [ratings, setRatings] = useState([]);
-  const [page, setPage] = useState(1);
-  const LIMIT = 5;
-  const [hasMore, setHasMore] = useState(true);
+  const [orders, setOrders] = useState([]);
+  const [dateRange, setDateRange] = useState([new Date("2025-04-01"), new Date()]);
+  const [todayStats, setTodayStats] = useState({ total_orders: 0, total_amount: 0 });
+  const [thisWeek, setThisWeek] = useState({ total_orders: 0, total_amount: 0 });
+  const [thisMonth, setThisMonth] = useState({ total_orders: 0, total_amount: 0 });
+  const [selectedStats, setSelectedStats] = useState({ earnings: 0, orders: 0 });
+  const [showCalendar, setShowCalendar] = useState(false);
+  const { dpProfile } = useAuth(); // 👈 Get delivery partner profile from context
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -69,129 +33,147 @@ export default function Earnings() {
   const monthStart = startOfMonth(today);
   const monthEnd = today;
 
-  const [todayStats, setTodayStats] = useState({ total_orders: 0, total_amount: 0 });
-  const [thisWeek, setThisWeek] = useState({ total_orders: 0, total_amount: 0 });
-  const [thisMonth, setThisMonth] = useState({ total_orders: 0, total_amount: 0 });
-  const [dateRange, setDateRange] = useState([new Date("2025-06-01"), new Date()]);
-  const [selectedStats, setSelectedStats] = useState({ earnings: 0, orders: 0, rejected: { count: 0, amount: 0 } });
-  const [showCalendar, setShowCalendar] = useState(false);
+const dpId = '43c6aeba-34e0-4ad7-9caf-9eb661b2e043'; // 👈 Replace with actual delivery partner ID
 
-  // Simulate pagination
+  // 🔄 Fetch orders on mount
   useEffect(() => {
-    const start = (page - 1) * LIMIT;
-    const newRatings = dummyRatings.slice(start, start + LIMIT);
-    setRatings((prev) => [...prev, ...newRatings]);
-    if (newRatings.length < LIMIT) setHasMore(false);
-  }, [page]);
+    const fetchDeliveredOrders = async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("order_id, created_ts, delivery_fee, status, dp_id")
+        .eq("status", "delivered")
+        .eq("dp_id", dpId);
 
-  // Infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore) {
-        setPage((prev) => prev + 1);
+      if (error) {
+        console.error("Error fetching orders:", error.message);
+        return;
       }
-    });
-    const sentinel = document.getElementById("load-more-ratings-sentinel");
-    if (sentinel) observer.observe(sentinel);
-    return () => sentinel && observer.disconnect();
-  }, [hasMore]);
 
-  // Today / Week / Month stats
+      setOrders(data || []);
+    };
+
+    fetchDeliveredOrders();
+  }, [dpId]);
+
+  // 🔄 Subscribe to real-time changes
+  useEffect(() => {
+    const channel = subscribeToRealtimeOrders(dpId, "Delivered", setOrders);
+
+    return () => {
+      supabase.removeChannel(channel); // ✅ Clean up
+    };
+  }, [dpId]);
+
+  // 📊 Today, Week, Month stats
   useEffect(() => {
     let tOrders = 0, tAmount = 0, wOrders = 0, wAmount = 0, mOrders = 0, mAmount = 0;
 
-    dummyOrders.forEach((order) => {
+    orders.forEach((order) => {
       const date = new Date(order.created_ts);
-      const amount = order.transaction.amount;
-      if (order.status === "delivered") {
-        if (date.toDateString() === today.toDateString()) {
-          tOrders++;
-          tAmount += amount;
-        }
-        if (isWithinInterval(date, { start: weekStart, end: weekEnd })) {
-          wOrders++;
-          wAmount += amount;
-        }
-        if (isWithinInterval(date, { start: monthStart, end: monthEnd })) {
-          mOrders++;
-          mAmount += amount;
-        }
+      const amount = order?.delivery_fee || 0;
+console.log("Order Date:", date, "Amount:", amount);
+      if (date.toDateString() === today.toDateString()) {
+        tOrders++;
+        tAmount += amount;
+      }
+      if (isWithinInterval(date, { start: weekStart, end: weekEnd })) {
+        wOrders++;
+        wAmount += amount;
+      }
+      if (isWithinInterval(date, { start: monthStart, end: monthEnd })) {
+        mOrders++;
+        mAmount += amount;
       }
     });
 
     setTodayStats({ total_orders: tOrders, total_amount: tAmount });
     setThisWeek({ total_orders: wOrders, total_amount: wAmount });
     setThisMonth({ total_orders: mOrders, total_amount: mAmount });
-  }, []);
+  }, [orders]);
 
-  // Date range insights
+  // 📊 Stats for selected date range
   useEffect(() => {
     const [start, end] = dateRange;
-    let earnings = 0, orders = 0, rejectedCount = 0, rejectedAmount = 0;
+    let earnings = 0, ordersCount = 0;
 
-    dummyOrders.forEach((order) => {
+    orders.forEach((order) => {
       const date = new Date(order.created_ts);
-      const amount = order.transaction.amount;
+      const amount = order.delivery_fee || 0;
       if (date >= start && date <= end) {
-        if (order.status === "delivered") {
-          orders++;
-          earnings += amount;
-        } else if (order.status === "rejected") {
-          rejectedCount++;
-          rejectedAmount += amount;
-        }
+        earnings += amount;
+        ordersCount++;
       }
     });
 
-    setSelectedStats({
-      earnings,
-      orders,
-      rejected: { count: rejectedCount, amount: rejectedAmount },
-    });
-  }, [dateRange]);
+    setSelectedStats({ earnings, orders: ordersCount });
+  }, [orders, dateRange]);
 
   return (
-    <div className="min-h-screen bg-gray-100  max-w-2xl mx-auto space-y-6">
+    <div className="min-h-[89.5vh]   max-w-2xl mx-auto space-y-6">
       {/* <h1 className="text-2xl font-bold text-center">Earnings</h1>
        */}
           {/* <Header title="Earning"/> */}
-          <div className="p-4 flex flex-col gap-8 pt-25">
-              
-      {/* Delivered Orders */}
-      <section className="bg-white p-6  rounded-xl shadow-lg">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">Delivered Orders</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard label="Today" amount={todayStats.total_amount} count={todayStats.total_orders} dateText={format(today, "dd MMM yyyy")} />
-          <StatCard label="This Week" amount={thisWeek.total_amount} count={thisWeek.total_orders} dateText={`${format(weekStart, "dd MMM")} - ${format(weekEnd, "dd MMM")}`} />
-          <StatCard label="This Month" amount={thisMonth.total_amount} count={thisMonth.total_orders} dateText={`${format(monthStart, "dd MMM")} - ${format(monthEnd, "dd MMM")}`} />
-        </div>
-      </section>
+      <div className="p-4 bg-gray-100  flex min-h-[86vh] shadow-lg h-full flex-col gap-6 pt-17">
+        {dpProfile?.status !== 'verified' ? (<div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-md mt-20">
+          <h2 className="font-semibold text-lg text-center mb-2">
+            Account Status
+          </h2>
+  
+          <p className="mb-2">
+            <strong>Status:</strong>{" "}
+            {dpProfile?.status === "not_verified"
+              ? "Not Verified"
+              : dpProfile?.status}
+          </p>
+          <p>Your account verification is under process. Please wait.</p>
 
-      {/* Insights */}
-      <section className="bg-white p-6  rounded-xl shadow-lg relative">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-gray-700">Insights</h2>
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-gray-500">
-              {dateRange.map((d) => format(d, "dd MMM yyyy")).join(" - ")}
-            </p>
-            <button onClick={() => setShowCalendar(!showCalendar)}>📅</button>
-          </div>
-        </div>
-        {showCalendar && (
-          <div className="absolute right-0 z-50 bg-white shadow-lg p-3 rounded">
-            <Calendar selectRange onChange={setDateRange} value={dateRange} />
-          </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <InsightCard label="Earnings" value={`₹${selectedStats.earnings}`} />
-          <InsightCard label="Orders" value={selectedStats.orders} />
-          <InsightCard label="Rejected" value={`₹${selectedStats.rejected.amount} (${selectedStats.rejected.count} orders)`} />
-        </div>
-      </section>
+  
+          {/* {vendorProfile?.request_status === "NA" ? (
+              ) : (
+                <p>
+                  <strong>Rejected:</strong> {vendorProfile?.request_status}
+                </p>
+              )} */}
+        </div>) : (
+          <>
+                      
+            {/* Delivered Orders */}
+            <section className="bg-white p-4   rounded-xl shadow-lg">
+              <h2 className="text-lg font-medium text-gray-500 mb-4">Delivered Orders</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard label="Today" amount={todayStats.total_amount} count={todayStats.total_orders} dateText={format(today, "dd MMM yyyy")} />
+                <StatCard label="This Week" amount={thisWeek.total_amount} count={thisWeek.total_orders} dateText={`${format(weekStart, "dd MMM")} - ${format(weekEnd, "dd MMM")}`} />
+                <StatCard label="This Month" amount={thisMonth.total_amount} count={thisMonth.total_orders} dateText={`${format(monthStart, "dd MMM")} - ${format(monthEnd, "dd MMM")}`} />
+              </div>
+            </section>
 
-      {/* Ratings */}
-      <section className="bg-white p-6 rounded-xl shadow-lg mb-15">
+            {/* Insights */}
+            <section className="bg-white p-4 mb-10  rounded-xl shadow-lg relative">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex  flex-col md:flex-row md:justify-between  w-full">
+                  <h2 className="text-lg font-medium text-gray-500">Insights</h2>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-gray-500">
+                      {dateRange.map((d) => format(d, "dd MMM yyyy")).join(" - ")}
+                    </p>
+                    <button onClick={() => setShowCalendar(!showCalendar)}><BsCalendarDate/></button>
+                  </div>
+                </div>
+              </div>
+              {showCalendar && (
+                <div className="absolute right-0 z-50 bg-white shadow-lg p-3 rounded">
+                  <Calendar selectRange onChange={setDateRange} value={dateRange} />
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <InsightCard label="Earnings" value={`₹${selectedStats.earnings}`} />
+                <InsightCard label="Orders" value={selectedStats.orders} />
+                <InsightCard label="Rejected" value={`₹$0 (0 orders)`} />
+              </div>
+            </section>
+
+            {/* Ratings */}
+            {/* <section className="bg-white p-6 rounded-xl shadow-lg mb-15">
         <h2 className="text-lg font-semibold text-gray-700 mb-4">Ratings & Reviews</h2>
         {ratings.length === 0 ? (
           <p className="text-gray-500 text-sm">No ratings yet.</p>
@@ -219,7 +201,11 @@ export default function Earnings() {
             )}
           </>
         )}
-              </section>
+              </section> */}
+          </>
+        )
+        }
+      
               <BottomNav/>
 </div>
     </div>
@@ -238,9 +224,9 @@ function StatCard({ label, amount, count, dateText }) {
 
 function InsightCard({ label, value }) {
   return (
-    <div className="text-center border rounded p-4 bg-gray-50">
+    <div className="text-center border-orange-200 border rounded-lg p-4 bg-orange-50">
       <p className="text-gray-600">{label}</p>
-      <p className="text-xl font-bold">{value}</p>
+      <p className="text-xl text-orange-600 font-bold">{value}</p>
     </div>
   );
 }
