@@ -12,6 +12,17 @@ import { supabase } from '../utils/Supabase';
 import toast from 'react-hot-toast';
 import { updateOrderStatus } from '../utils/updateOrderStauts';
 import { truncateLetters } from '../constant/constants';
+import { MdOutlinePendingActions } from "react-icons/md";
+import { FaStore } from "react-icons/fa6";
+import { FaRegAddressCard } from "react-icons/fa";
+import { BsCardList } from "react-icons/bs";
+import { HiOutlineClipboardList } from "react-icons/hi";
+import { FaClock } from 'react-icons/fa';
+
+
+
+
+
 
 export default function DPHomePage() {
   const { dpProfile, session } = useAuth();
@@ -158,7 +169,7 @@ export default function DPHomePage() {
 
     return (
         <div className="mx-auto    text-gray-800 ">
-            <div className='max-w-2xl  mx-auto p-2 border-2 min-h-[85vh]   shadow-lg'>
+            <div className='max-w-2xl  mx-auto p-2  min-h-[85vh]   shadow-lg'>
                 {/* <Header title='Order' /> */}
 {dpProfile?.status !=='verified' ? ( <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-md mt-12">
               <h2 className="font-semibold text-lg text-center mb-2">
@@ -182,7 +193,7 @@ export default function DPHomePage() {
               )} */}
           </div>) : (
               <>
-                <div className='max-w-2xl  mx-auto md:p-6 p-3 md:mt-15 mt-5 py-10 min-h-[85vh]   '>
+                <div className='max-w-2xl  mx-auto md:p-6   md:mt-10 py-10 min-h-[85vh]   '>
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4 ">
                             <img src={dpProfile?.photo_url || DEFAULT_PHOTO} alt="Profile" className="w-14 h-14 rounded-full shadow-md" />
@@ -223,7 +234,7 @@ export default function DPHomePage() {
 
                     {/* Order Cards */}
                     {isLoading ? (
-  <div className="flex flex-col justify-center items-center py-10">
+  <div className="flex flex-col justify-center items-center py-5">
     <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
     <p className="text-gray-500 mt-4 text-sm">Loading orders...</p>
   </div>
@@ -231,16 +242,21 @@ export default function DPHomePage() {
   orders.map((order) => (
     <div
       key={order.order_id}
-      className="bg-white w-full rounded-xl md:p-6 p-3 shadow-md border-gray-300 mb-5 border"
+      className="bg-white w-full rounded-xl md:p-6 p-2 shadow-md border-gray-300 mb-5 border"
     >
       {/* OTP + Directions button (Only if not delivered) */}
       {order?.status?.toLowerCase() !== "delivered" && (
         <div className="flex flex-col">
           <div className="space-y-2">
-            <p><span className="font-semibold">Order ID:</span> {order?.user_order_id}</p>
-            <p><span className="font-semibold">Status:</span> <span className="text-blue-600 font-medium">{order?.status}</span></p>
-            <p><span className="font-semibold">Vendor:</span> {truncateLetters(order?.vendor?.shop_name, 20)}</p>
-            <p><span className="font-semibold">Vendor Add.:</span> {order?.vendor?.street} {order?.vendor?.city}</p>
+            <p><span className="font-semibold flex items-center gap-1"> <BsCardList /> Order ID:<span className="text-gray-600 text-sm">{order?.user_order_id}</span> </span></p>
+            <p><span className="font-medium flex items-center  gap-1"><MdOutlinePendingActions /> Status: <span className="text-blue-600 font-medium">{order?.status}</span></span> </p>
+            <p><span className="font-medium flex items-center gap-1"><FaStore /> Vendor: <span className="text-gray-600 text-sm">{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p>
+            <p className="flex items-start gap-1">
+  <FaRegAddressCard className="mt-[3.5px] shrink-0" />
+  <span className="font-medium">
+    Vendor Add.: <span className="text-gray-600 text-sm">{order?.vendor?.street} {order?.vendor?.city}</span>
+  </span>
+</p>
           </div>
 
           <div className='flex justify-between items-center w-full mt-2'>
@@ -293,22 +309,34 @@ export default function DPHomePage() {
 
           {order?.status?.toLowerCase() === "delivered" && (
             <div className="space-y-2 text-gray-800 text-sm">
-              <p><span className="font-semibold">Items:</span> {order?.order_item?.map((item, i) => (
-                <span key={item.order_item_id}>
-                  {item?.quantity} x {item?.items?.item_name}
-                  {i !== order?.order_item?.length - 1 && ', '}
-                </span>
-              ))}</p>
-              <p><span className="font-semibold">Customer:</span> {order?.user?.name}</p>
-              <p><span className="font-semibold">Vendor:</span> {truncateLetters(order?.vendor?.shop_name, 20)}</p>
-              <p><span className="font-semibold">Delivered At:</span> {new Date(order?.updated_ts).toLocaleString()}</p>
+             <p className="flex items-start gap-1 flex-wrap">
+  {/* Icon and "Items:" text */}
+  <span className="flex items-center font-semibold shrink-0 text-gray-500">
+    <HiOutlineClipboardList className="mr-1" />
+    Items:
+  </span>
+
+  {/* Items list */}
+  <span className="flex-1 text-gray-800">
+    {order?.order_item?.map((item, i) => (
+      <span key={item.order_item_id}>
+        {item?.quantity} x {item?.items?.item_name}
+        {i !== order?.order_item?.length - 1 && ', '}
+      </span>
+    ))}
+  </span>
+</p>
+
+              <p><span className="font-semibold flex items-center gap-1 text-gray-500"> <FaUser/> Customer: <span className='font-normal'>{order?.user?.name}</span></span> </p>
+              <p><span className="font-semibold flex items-center gap-1 text-gray-500"> <FaStore/> Vendor: <span className='font-normal'>{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p>
+              <p><span className="font-semibold flex items-center gap-1 text-gray-500"> <FaClock/> Delivered At: <span className='font-normal'>{new Date(order?.updated_ts).toLocaleString()}</span></span> </p>
               <p>
                 <span className="font-semibold">Payment:</span>
                 <span className={`ml-2 px-3 py-1 text-white rounded-full text-sm ${order.payment_mode === 'COD' ? 'bg-red-500' : 'bg-green-500'}`}>
                   {order?.payment_mode}
                 </span>
               </p>
-              <h1 className='w-full p-2 border-green border-1 text-center bg-green-100'>Delivered</h1>
+              <h1 className='w-full p-2 border-green border-1 font-medium text-center bg-green-100'>Delivered</h1>
             </div>
           )}
         </div>

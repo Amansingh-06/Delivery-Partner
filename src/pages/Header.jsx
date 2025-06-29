@@ -86,29 +86,36 @@ const Header = ({ title = "Registration" }) => {
             </div>
 
             {/* Title and Logout */}
-            <div className="relative z-10 flex items-center justify-center p-5">
-                <h1 className="text-2xl font-bold md:text-left text-center text-white">
-                    {title}
-                </h1>
-
-                {location.pathname === "/profile" && (
-                    <button
-  aria-label="Logout"
-  onClick={() => logout(setSession, setLoggingOut)}
-  disabled={loggingOut}
-  className={`absolute top-6 right-4 px-4 py-2 text-sm font-medium rounded-md shadow-md transition-all duration-300
-    ${
-      loggingOut
-        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-        : "bg-green-500 text-white hover:bg-orange-600 hover:shadow-lg"
-    }`}
+            <div
+  className={`relative z-10 flex items-center p-4 w-full ${
+    title === "Profile" ? "justify-between" : "justify-center"
+  }`}
 >
-  {loggingOut ? "Logging out..." : "Logout"}
-</button>
-                )}
-                
+  <h1
+    className={`text-2xl font-medium text-white ${
+      title === "Profile" ? "text-left" : "text-center"
+    }`}
+  >
+    {title}
+  </h1>
 
-            </div>
+  {title === "Profile" && (
+     <button
+     aria-label="Logout"
+     onClick={() => logout(setSession, setLoggingOut)}
+     disabled={loggingOut}
+     className={`px-6 py-2 text-sm font-semibold rounded-lg shadow-md transition-all duration-300 transform
+       ${
+         loggingOut
+           ? "bg-gray-300 text-gray-500 cursor-not-allowed scale-100"
+           : "bg-orange text-white hover:bg-orange-600 hover:shadow-lg hover:scale-105 active:scale-95"
+       }`}
+   >
+     {loggingOut ? "Logging out..." : "Logout"}
+   </button>
+  )}
+</div>
+
             </div>
             {loggingOut && <Loader/>}
 
