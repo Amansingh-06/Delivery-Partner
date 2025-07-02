@@ -13,10 +13,12 @@ import Earnings from './pages/Earnings';
 // import Layout from './Layout/Layout'; // 🟡 Import your Layout
 import Layout from './pages/Layout';
 import AdminProtectedRoute from './Routes/AdminAccess';
+import ScrollToTop from './components/ScrolltoTop';
 
 function App() {
   return (
     <div className='font-family-poppins bg-gradient-to-br from-white via-gray-50 to-gray-100'>
+      <ScrollToTop />
       <Router>
         <Routes>
           {/* 🔐 Guest Routes */}
