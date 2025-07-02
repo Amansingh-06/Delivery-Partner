@@ -171,12 +171,20 @@ export default function DPHomePage() {
         <div className="mx-auto    text-gray-800 ">
             <div className='max-w-2xl  mx-auto p-2  min-h-[85vh]   shadow-lg'>
                 {/* <Header title='Order' /> */}
-{dpProfile?.status !=='verified' ? ( <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-md mt-12">
-              <h2 className="font-semibold text-lg text-center mb-2">
-                Account Status
-              </h2>
-  
-              <p className="mb-2">
+{dpProfile?.status === "blocked" ? (
+  <div className="bg-red-50 border border-red-300 text-red-800 p-4 mt-10 rounded-md">
+    <h2 className="font-semibold text-lg text-center mb-2">
+      Account Blocked
+    </h2>
+    <p>Your account has been blocked. Please contact support for assistance.</p>
+  </div>
+) : dpProfile?.status !== 'verified' ? (
+  <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-md mt-12">
+    <h2 className="font-semibold text-lg text-center mb-2">
+      Account Status
+    </h2>
+
+    <p className="mb-2">
                 <strong>Status:</strong>{" "}
                 {dpProfile?.status === "not_verified"
                   ? "Not Verified"
@@ -267,7 +275,7 @@ export default function DPHomePage() {
             )}
 
             <button
-              className="flex items-center text-white gap-1 font-medium bg-blue-600 hover:bg-blue-700 p-1 rounded-md transition"
+              className="flex items-center text-white gap-1 font-medium bg-orange hover:bg-orange p-1 rounded-md transition"
               onClick={() => {
                 const goingToCustomer = order?.status?.toLowerCase() === "on the way";
                 const lat = goingToCustomer ? order?.user_lat : order?.vendor_lat;
@@ -350,7 +358,7 @@ export default function DPHomePage() {
           setShowOtpSubmit(true);
         }}
         
-          className="mt-6 mb-5 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold shadow-sm transition"
+          className="mt-6 mb-5 w-full bg-gradient-to-br from-orange via-yellow cursor-pointer active:scale-95 to-orange text-white py-1 rounded-lg font-semibold shadow-sm transition"
         >
           <FaCheckCircle className="inline mr-2" /> Mark as Delivered
         </button>

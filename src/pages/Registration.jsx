@@ -197,12 +197,12 @@ const Registration = () => {
     return (
         <div className="min-h-screen  flex items-center justify-center  ">
             {loading && <Loader/>}
-            <div className="w-full max-w-2xl   space-y-4     bg-white ">
+            <div className="w-full max-w-2xl   space-y-3     bg-white ">
                 <Header title='Registration'/>
-                <div className='max-w-2xl  md:px-4 px-3 bg-gray-100 py-15 mt-7 shadow-lg'>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl  ">
-                        <div className='flex-col flex gap-6 md:px-6 px-4 bg-white  py-6 rounded-lg shadow-lg '>
-                            <h1 className='text-xl font-medium text-gray-500'>Basic Details</h1>
+                <div className='max-w-2xl  md:px-4 px-3 bg-gray-100 py-15 mt-4 shadow-lg'>
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-2xl  ">
+                        <div className='flex-col flex gap-6 md:px-6 px-2 bg-white  py-4 rounded-lg shadow-lg '>
+                            <h1 className='text-md md:text-2xl lg:text-2xl font-medium text-gray uppercase'>Basic Details</h1>
                             <InputField
                                 id="name"
                                 type='text'
@@ -307,13 +307,13 @@ const Registration = () => {
                                 />
                             </div>
                         </div>
-                        <div className='flex-col flex gap-6 bg-white px-6 py-4 rounded-lg shadow-lg  '>
+                        <div className='flex-col flex gap-6 bg-white px-2 py-4 rounded-lg shadow-lg  '>
                             <div className="flex flex-col md:flex-row gap-8 ">
                                 {/* Upload Photo */}
 
                                 <div className="flex flex-col gap-6 w-full">
                                     {/* === Upload Photo === */}
-                                    <label className="block  font-semibold text-gray-500">Upload Photo</label>
+                                    <label className="block  text-md md:text-2xl lg:text-2xl font-medium text-gray uppercase">Upload Photo</label>
                                     <div className="flex md:gap-8 gap-3 flex-col md:flex-row w-full h-40">
 
                                         {/* Photo Preview */}
@@ -343,7 +343,7 @@ const Registration = () => {
                                         {/* Select Photo Button */}
                                         <label
                                             htmlFor="photo"
-                                            className={`md:flex-1 bg-${photoSelected ? 'gray-500' : 'orange-300'} hover:bg-${photoSelected ? 'gray-600' : 'orange-400'} text-white rounded p-2 flex items-center justify-center cursor-pointer font-semibold text-base transition select-none`}
+                                            className={`md:flex-1 bg-${photoSelected ? 'gray-500' : 'orange'} hover:bg-${photoSelected ? 'gray-600' : 'orange-400'} text-white rounded p-2 flex items-center justify-center cursor-pointer font-semibold text-base transition select-none`}
                                         >
                                             {photoSelected ? 'Photo Selected' : 'Select Photo'}
                                         </label>
@@ -390,7 +390,7 @@ const Registration = () => {
 
                                     {/* === Upload ID === */}
                                     <div>
-                                        <label className="block mt-2 mb-4 text-base font-semibold text-gray-500">
+                                        <label className="block mt-2 mb-4 text-md md:text-2xl lg:text-2xl font-medium text-gray uppercase">
                                             Add at least two IDs <span className='text-sm text-gray-400'>(e.g., Aadhaar Card, Driving License, PAN)</span>
                                         </label>
                                         <div className="flex items-center md:flex-row flex-col md:gap-8 gap-2 w-full">
@@ -441,7 +441,7 @@ const Registration = () => {
 <button
     type="button"
                                                 onClick={() => document.getElementById('id').click()}
-                                                className={`md:flex-1 w-full ${idFile?.length > 0 ? 'bg-gray-500 hover:bg-gray-600' : 'bg-orange-300 hover:bg-orange-400'
+                                                className={`md:flex-1 w-full ${idFile?.length > 0 ? 'bg-gray-500 hover:bg-gray-600' : 'bg-orange hover:bg-orange'
                                                     } text-white font-semibold px-4 py-2 rounded transition select-none`}
                                             >
                                                 {idFile?.length > 0 ? `${idFile.length} ID(s) Selected` : 'Select ID(s)'}
@@ -459,8 +459,8 @@ const Registration = () => {
                             <button
                                 type="submit"
                                 onClick={() => trigger()} // ✅ Show validation error on click
-                                className={`w-full text-white font-semibold py-2 rounded-md transition-all
-    ${isValid ? 'bg-orange hover:bg-orange-600 cursor-pointer' : 'bg-gray-400 cursor-not-allowed'}`}
+                                className={`flex-1  rounded-[8px] h-11 flex items-center justify-center font-bold  text-white text-lg shadow-lg hover:shadow-xl transition-all w-full duration-300 hover:scale-[1.02] disabled:bg-orange/50 disabled:cursor-not-allowed disabled:opacity-70 disabled:text-white
+    ${isValid ? 'bg-gradient-to-br from-orange via-yellow cursor-pointer active:scale-95 to-orange' : 'bg-gray-400 cursor-not-allowed'}`}
                             >
                                 Create Account
                             </button>

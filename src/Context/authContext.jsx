@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
             value = selectedDpId;
         } else if (session?.user?.id) {
             queryField = "u_id"; // delivery_partner table ka user id field
-            value = session.user.id;
+            value = session?.user?.id;
         }
     
         // console.log("selectedVendorId", selectedVendorId);
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
     // ✅ Fetch on initial load or when session changes
     useEffect(() => {
         fetchDPProfile();
-    }, [session?.user?.id]);
+    }, [session, selectedDpId]);
 
     return (
         <AuthContext.Provider

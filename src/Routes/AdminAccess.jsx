@@ -8,7 +8,7 @@ export default function AdminProtectedRoute({ children, fallback = null }) {
     // const { vendorId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const vendorId = new URLSearchParams(location.search).get("vendorId");
+    const dpId = new URLSearchParams(location.search).get("dpId");
     const token = new URLSearchParams(location.search).get("token");
     const refreshToken = new URLSearchParams(location.search).get("refresh");
 
@@ -62,13 +62,13 @@ export default function AdminProtectedRoute({ children, fallback = null }) {
             }
 
             // ✅ Admin verified
-            setSelectedDpId(vendorId);
-            
+            setSelectedDpId(dpId);
+
             setIsAllowed(true);
         };
 
         verifyAdmin();
-    }, [token, refreshToken, vendorId]);
+    }, [token, refreshToken, dpId]);
 
     if (isAllowed === null) return <Loader/>;
 

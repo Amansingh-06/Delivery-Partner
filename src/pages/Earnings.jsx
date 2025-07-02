@@ -113,17 +113,25 @@ console.log("Order Date:", date, "Amount:", amount);
       {/* <h1 className="text-2xl font-bold text-center">Earnings</h1>
        */}
           {/* <Header title="Earning"/> */}
-      <div className="p-4 bg-gray-100  flex min-h-[86vh] shadow-lg h-full flex-col gap-6 pt-17">
-        {dpProfile?.status !== 'verified' ? (<div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-md mt-20">
-          <h2 className="font-semibold text-lg text-center mb-2">
-            Account Status
-          </h2>
-  
-          <p className="mb-2">
-            <strong>Status:</strong>{" "}
-            {dpProfile?.status === "not_verified"
-              ? "Not Verified"
-              : dpProfile?.status}
+      <div className="p-2 bg-gray-100  flex min-h-[86vh] shadow-lg h-full flex-col gap-6 pt-17">
+      {dpProfile?.status === "blocked" ? (
+  <div className="bg-red-50 border border-red-300 text-red-800 p-4  rounded-md">
+    <h2 className="font-semibold text-lg text-center mb-2">
+      Account Blocked
+    </h2>
+    <p>Your account has been blocked. Please contact support for assistance.</p>
+  </div>
+) : dpProfile?.status !== 'verified' ? (
+  <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-md mt-20">
+    <h2 className="font-semibold text-lg text-center mb-2">
+      Account Status
+    </h2>
+
+    <p className="mb-2">
+      <strong>Status:</strong>{" "}
+      {dpProfile?.status === "not_verified"
+        ? "Not Verified"
+        : dpProfile?.status}
           </p>
           <p>Your account verification is under process. Please wait.</p>
 
@@ -139,7 +147,7 @@ console.log("Order Date:", date, "Amount:", amount);
                       
             {/* Delivered Orders */}
             <section className="bg-white p-4   rounded-xl shadow-lg">
-              <h2 className="text-lg font-medium text-gray-500 mb-4">Delivered Orders</h2>
+              <h2 className="text-md md:text-2xl lg:text-2xl font-medium text-gray uppercase mb-4">Delivered Orders</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <StatCard label="Today" amount={todayStats.total_amount} count={todayStats.total_orders} dateText={format(today, "dd MMM yyyy")} />
                 <StatCard label="This Week" amount={thisWeek.total_amount} count={thisWeek.total_orders} dateText={`${format(weekStart, "dd MMM")} - ${format(weekEnd, "dd MMM")}`} />
@@ -151,7 +159,7 @@ console.log("Order Date:", date, "Amount:", amount);
             <section className="bg-white p-4 mb-10  rounded-xl shadow-lg relative">
               <div className="flex justify-between items-center mb-4">
                 <div className="flex  flex-col md:flex-row md:justify-between  w-full">
-                  <h2 className="text-lg font-medium text-gray-500">Insights</h2>
+                  <h2 className="text-md md:text-2xl lg:text-2xl font-medium text-gray uppercase">Insights</h2>
                   <div className="flex items-center gap-2">
                     <p className="text-sm text-gray-500">
                       {dateRange.map((d) => format(d, "dd MMM yyyy")).join(" - ")}
@@ -224,7 +232,7 @@ function StatCard({ label, amount, count, dateText }) {
 
 function InsightCard({ label, value }) {
   return (
-    <div className="text-center border-orange-200 border rounded-lg p-4 bg-orange-50">
+    <div className=" border-orange-200 border rounded-lg p-4 bg-orange-50">
       <p className="text-gray-600">{label}</p>
       <p className="text-xl text-orange-600 font-bold">{value}</p>
     </div>

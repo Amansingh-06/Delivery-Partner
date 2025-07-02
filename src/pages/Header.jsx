@@ -7,6 +7,7 @@ import { GiChickenOven, GiFrenchFries, GiFullPizza } from 'react-icons/gi';
 import { FaIceCream } from 'react-icons/fa';
 import { PiBowlFood } from 'react-icons/pi';
 import Loader from '../components/Loader';
+import { CiLogout } from 'react-icons/ci';
 
 const Header = ({ title = "Registration" }) => {
     const [loggingOut, setLoggingOut] = useState(false);
@@ -104,13 +105,14 @@ const Header = ({ title = "Registration" }) => {
      aria-label="Logout"
      onClick={() => logout(setSession, setLoggingOut)}
      disabled={loggingOut}
-     className={`px-6 py-2 text-sm font-semibold rounded-lg shadow-md transition-all duration-300 transform
+     className={`px-2 py-2 text-sm font-medium rounded-lg shadow-md transition-all duration-300 transform
        ${
          loggingOut
            ? "bg-gray-300 text-gray-500 cursor-not-allowed scale-100"
            : "bg-orange text-white hover:bg-orange-600 hover:shadow-lg hover:scale-105 active:scale-95"
        }`}
-   >
+              >
+    <CiLogout className="inline-block mr-2 text-lg font-bold" />
      {loggingOut ? "Logging out..." : "Logout"}
    </button>
   )}

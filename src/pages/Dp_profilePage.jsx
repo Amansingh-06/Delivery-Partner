@@ -109,32 +109,32 @@ export default function DpProfile() {
             if (data) {
                 console.log("dpData",data)
                 reset({
-                    name: data.name || '',
-                    dob: data.dob || '',
-                    street: data.street || '',
-                    pincode: data.pincode || '',
-                    city: data.city || '',
-                    state: data.state || '',
+                    name: data?.name || '',
+                    dob: data?.dob || '',
+                    street: data?.street || '',
+                    pincode: data?.pincode || '',
+                    city: data?.city || '',
+                    state: data?.state || '',
                 });
-                setPhotoUrl(data.photo_url || '');
-                setIdUrls(data.id_url || []);
+                setPhotoUrl(data?.photo_url || '');
+                setIdUrls(data?.id_url || []);
 
                 setInitialState({
-                    name: data.name || '',
-                    dob: data.dob || '',
-                    street: data.street || '',
-                    pincode: data.pincode || '',
-                    city: data.city || '',
-                    state: data.state || '',
-                    photo_url: data.photo_url || '',
-                    id_url: data.id_url || []
+                    name: data?.name || '',
+                    dob: data?.dob || '',
+                    street: data?.street || '',
+                    pincode: data?.pincode || '',
+                    city: data?.city || '',
+                    state: data?.state || '',
+                    photo_url: data?.photo_url || '',
+                    id_url: data?.id_url || []
                 });
             }
             if (error) console.error('❌ Fetch error:', error.message);
             setLoading(false);
         }
         fetchData();
-    }, [session?.user?.id, reset]);
+    }, [dpProfile, reset]);
 
     const onSubmit = async (formData) => {
         setLoading(true);
@@ -188,7 +188,7 @@ export default function DpProfile() {
     return (
         <div className='max-w-2xl mx-auto   '>
             {/* <Header title='Profile'/> */}
-            <div className="max-w-2xl mx-auto mt-10 border pt-12 bg-white p-6  min-h-[88vh]  shadow-xl  border-gray-200">
+            <div className="max-w-2xl mx-auto mt-8 border  bg-white p-6  min-h-[88vh]  shadow-xl  border-gray-200">
 {loading && <Loader/>}
                 {/* <h2 className="text-3xl font-semibold mb-6 text-indigo-700 border-b pb-2">Delivery Partner Profile</h2> */}
 
@@ -289,7 +289,7 @@ export default function DpProfile() {
                             <button
                                 type="button"
                                 onClick={() => photoInputRef.current.click()}
-                                className="bg-orange-300 hover:bg-orange-400 text-white font-medium px-4 py-2 mt-2 rounded-md transition"
+                                className="bg-orange text-white font-medium px-4 py-1 mt-2 rounded-md transition"
                             >
                                 Select Photo
                             </button>
@@ -349,7 +349,7 @@ export default function DpProfile() {
                             <button
                                 type="button"
                                 onClick={() => idInputRef.current.click()}
-                                className="bg-orange-300 hover:bg-orange-400 text-white font-medium px-4 py-2 rounded-md transition"
+                                className="bg-orange text-white font-medium px-4 py-1 rounded-md transition"
                             >
                                 Select ID Proof
                             </button>
@@ -369,9 +369,9 @@ export default function DpProfile() {
                     <button
                         type="submit"
                         disabled={loading || !isChanged}
-                        className={`w-full py-3 rounded-md font-semibold transition ${loading || !isChanged
+                        className={`flex-1  rounded-[8px] h-11 flex items-center justify-center font-bold  text-white text-lg shadow-lg hover:shadow-xl transition-all w-full duration-300 hover:scale-[1.02] disabled:bg-orange/50 disabled:cursor-not-allowed disabled:opacity-70 disabled:text-white ${loading || !isChanged
                             ? 'bg-gray-400 text-white cursor-not-allowed'
-                            : 'bg-orange-600 hover:bg-orange-700 text-white font-medium'
+                            : 'bg-gradient-to-br from-orange via-yellow cursor-pointer active:scale-95 to-orange'
                             }`}
                     >
                         {loading ? 'Saving...' : 'Save Changes'}
