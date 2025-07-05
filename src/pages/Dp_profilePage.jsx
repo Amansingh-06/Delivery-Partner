@@ -188,12 +188,13 @@ export default function DpProfile() {
     return (
         <div className='max-w-2xl mx-auto   '>
             {/* <Header title='Profile'/> */}
-            <div className="max-w-2xl mx-auto mt-8 border  bg-white p-6  min-h-[88vh]  shadow-xl  border-gray-200">
+            <div className="max-w-2xl mx-auto mt-8 border  bg-white md:p-4 pt-8 p-2  min-h-[88vh]  shadow-xl  border-gray-200">
 {loading && <Loader/>}
                 {/* <h2 className="text-3xl font-semibold mb-6 text-indigo-700 border-b pb-2">Delivery Partner Profile</h2> */}
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mb-10">
-
+                    <div className='border-gray-300 border-1 p-2 rounded-lg shadow-lg'>
+                        <h1 className='text-md md:text-2xl lg:text-2xl font-medium text-gray uppercase mb-2'>Basic Details</h1>
                     {/* Full Name */}
                     <div>
                         <label className="block text-gray-700 font-medium mb-1">Full Name</label>
@@ -272,13 +273,15 @@ export default function DpProfile() {
                             placeholder="6-digit PIN"
                         />
                         {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode.message}</p>}
-                    </div>
+                        </div>
+                        </div>
 
                     {/* Upload Photo & ID Proof section */}
+                    <div className='border-gray-300 border-1 p-2 rounded-lg shadow-lg mt-6'>
                     <div className="flex flex-col md:flex-row md:items-start md:gap-8">
                         {/* Upload Photo */}
                         <div className="mb-6 md:mb-0 md:w-1/3">
-                            <label className="block text-gray-700 font-medium mb-2">Upload Photo</label>
+                            <label className="block text-md md:text-2xl lg:text-2xl font-medium text-gray uppercase mb-2">Upload Photo</label>
                             {photoUrl && (
                                 <img
                                     src={photoUrl?.url || photoUrl}
@@ -303,7 +306,7 @@ export default function DpProfile() {
 
                         {/* Upload ID Proof */}
                         <div className="md:w-2/3">
-                            <label className="block text-gray-700 font-medium mb-2">Upload ID Proof</label>
+                            <label className="block text-md md:text-2xl lg:text-2xl font-medium text-gray uppercase mb-2">Upload ID Proof</label>
 
                             {/* ID Previews */}
                             {Array.isArray(idUrls) && idUrls.length > 0 && (
@@ -361,21 +364,32 @@ export default function DpProfile() {
                                 onChange={(e) => handleFileChange(e, setIdUrls, setIdFiles, true, true)}
                             />
                         </div>
-                    </div>
+                        </div>
+                        </div>
 
 
 
                     {/* Save Button */}
                     <button
-                        type="submit"
-                        disabled={loading || !isChanged}
-                        className={`flex-1  rounded-[8px] h-11 flex items-center justify-center font-bold  text-white text-lg shadow-lg hover:shadow-xl transition-all w-full duration-300 hover:scale-[1.02] disabled:bg-orange/50 disabled:cursor-not-allowed disabled:opacity-70 disabled:text-white ${loading || !isChanged
-                            ? 'bg-gray-400 text-white cursor-not-allowed'
-                            : 'bg-gradient-to-br from-orange via-yellow cursor-pointer active:scale-95 to-orange'
-                            }`}
-                    >
-                        {loading ? 'Saving...' : 'Save Changes'}
-                    </button>
+  type="submit"
+  disabled={loading}
+  onClick={(e) => {
+    if (!isChanged) {
+      e.preventDefault(); // ❗stop default form submit
+      toast.error("Update not found");
+      return;
+    }
+    // continue with form submit normally
+  }}
+  className={`flex-1 rounded-[8px] h-11 flex items-center justify-center font-bold text-white text-lg shadow-lg hover:shadow-xl transition-all w-full duration-300 hover:scale-[1.02] ${
+    !isChanged
+      ? 'bg-gray-400 text-white cursor-not-allowed'
+      : 'bg-gradient-to-br from-orange via-yellow cursor-pointer active:scale-95 to-orange'
+  }`}
+>
+  {loading ? 'Saving...' : 'Save Changes'}
+</button>
+
                 </form>
             </div>
             <BottomNav/>

@@ -6,7 +6,7 @@ export const updateOrderStatus = async (orderId, newStatus) => {
         .from('orders')
         .update({
             status: newStatus,
-            updated_ts: new Date() // 👈 this sends a real JavaScript Date object
+            delivered_ts: new Date() // 👈 this sends a real JavaScript Date object
         })
         .eq('order_id', orderId);
 

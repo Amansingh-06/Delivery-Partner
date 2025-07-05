@@ -18,7 +18,7 @@ import ScrollToTop from './components/ScrolltoTop';
 function App() {
   return (
     <div className='font-family-poppins bg-gradient-to-br from-white via-gray-50 to-gray-100'>
-      <ScrollToTop />
+      {/* <ScrollToTop /> */}
       <Router>
         <Routes>
           {/* 🔐 Guest Routes */}

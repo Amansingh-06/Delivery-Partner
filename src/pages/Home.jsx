@@ -9,7 +9,7 @@ import { fetchOrdersByDP } from '../utils/fetchOrdersByDp';
 import { subscribeToRealtimeOrders } from '../utils/subscribeToRealtimeOrders';
 import { useAuth } from '../Context/authContext';
 import { supabase } from '../utils/Supabase';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { updateOrderStatus } from '../utils/updateOrderStauts';
 import { truncateLetters } from '../constant/constants';
 import { MdOutlinePendingActions } from "react-icons/md";
@@ -18,6 +18,7 @@ import { FaRegAddressCard } from "react-icons/fa";
 import { BsCardList } from "react-icons/bs";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import { FaClock } from 'react-icons/fa';
+// import { set } from 'mongoose';
 
 
 
@@ -36,6 +37,7 @@ export default function DPHomePage() {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadmore, setLoadMore] = useState(false);
   const [otp, setOtp] = useState('')
   const [submittingOtp, setSubmittingOtp] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -50,7 +52,7 @@ export default function DPHomePage() {
     // ✅ Get availability status
     useEffect(() => {
       const fetchAvailability = async () => {
-        if (!session?.user?.id) return;
+        if (!DpId || !session?.user?.id) return; // ✅ fix here
         const { data, error } = await supabase
           .from("delivery_partner")
           .select("available")
@@ -71,7 +73,8 @@ export default function DPHomePage() {
     }, [DpId]);
   
     // ✅ Toggle Online/Offline
-    const handleToggleOnline = async (value) => {
+  const handleToggleOnline = async (value) => {
+
       setIsOnline(value);
       const { error } = await supabase
         .from("delivery_partner")
@@ -103,6 +106,7 @@ export default function DPHomePage() {
         }
   
         console.log(`📦 Fetching orders... Reset: ${reset} Offset: ${currentOffset}`);
+        if (!reset) setLoadMore(true);
   
         setIsLoading(true);
         const result = await fetchOrdersByDP(dpId, status, LIMIT, currentOffset);
@@ -123,6 +127,7 @@ export default function DPHomePage() {
         }
   
         setIsLoading(false);
+        setLoadMore(false);
       },
       [dpId, status, offset, isLoading]
     );
@@ -136,7 +141,7 @@ export default function DPHomePage() {
     // ✅ Infinite Scroll
     const lastOrderRef = useCallback(
       (node) => {
-        if (isLoading || !hasMore) return;
+        if (loadmore || !hasMore) return;
         if (observer.current) observer.current.disconnect();
   
         observer.current = new IntersectionObserver((entries) => {
@@ -153,14 +158,15 @@ export default function DPHomePage() {
   
     // ✅ Realtime Updates
     useEffect(() => {
-      console.log("📡 Subscribing to realtime for status:", status);
-      const channel = subscribeToRealtimeOrders(dpId, status, setOrders);
-  
+      console.log("📡 Subscribing to realtime updates...");
+      const channel = subscribeToRealtimeOrders(dpId, () => status, setOrders);
+    
       return () => {
         console.log("🧹 Unsubscribing from realtime...");
         channel.unsubscribe();
       };
-    }, [dpId, status]);
+    }, [dpId, status]); 
+    
   
     console.log("📋 Current Orders:", orders.length);
 
@@ -201,12 +207,12 @@ export default function DPHomePage() {
               )} */}
           </div>) : (
               <>
-                <div className='max-w-2xl  mx-auto md:p-6   md:mt-10 py-10 min-h-[85vh]   '>
+                <div className='max-w-2xl  mx-auto md:p-6   md:mt-5 py-10 min-h-[85vh]   '>
                     <div className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-4 ">
                             <img src={dpProfile?.photo_url || DEFAULT_PHOTO} alt="Profile" className="w-14 h-14 rounded-full shadow-md" />
                             <div>
-                                <h2 className="md:text-2xl text-lg font-bold">Hi, {dpProfile?.name}</h2>
+                                <h2 className="md:text-2xl text-lg text-gray-800 font-bold">Hi, {dpProfile?.name}</h2>
                                 <p className="text-sm text-gray-600">
                                     {isOnline === null ? "Loading..." : isOnline ? "Online" : "Offline"}
                                 </p>
@@ -241,132 +247,149 @@ export default function DPHomePage() {
                     </div>
 
                     {/* Order Cards */}
-                    {isLoading ? (
-  <div className="flex flex-col justify-center items-center py-5">
+                    {orders.length === 0 && isLoading ? (
+  <div className="flex flex-col justify-center items-center py-10">
     <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
     <p className="text-gray-500 mt-4 text-sm">Loading orders...</p>
   </div>
-) : orders?.length > 0 ? (
-  orders.map((order) => (
-    <div
-      key={order.order_id}
-      className="bg-white w-full rounded-xl md:p-6 p-2 shadow-md border-gray-300 mb-5 border"
-    >
-      {/* OTP + Directions button (Only if not delivered) */}
-      {order?.status?.toLowerCase() !== "delivered" && (
-        <div className="flex flex-col">
-          <div className="space-y-2">
-            <p><span className="font-semibold flex items-center gap-1"> <BsCardList /> Order ID:<span className="text-gray-600 text-sm">{order?.user_order_id}</span> </span></p>
-            <p><span className="font-medium flex items-center  gap-1"><MdOutlinePendingActions /> Status: <span className="text-blue-600 font-medium">{order?.status}</span></span> </p>
-            <p><span className="font-medium flex items-center gap-1"><FaStore /> Vendor: <span className="text-gray-600 text-sm">{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p>
-            <p className="flex items-start gap-1">
-  <FaRegAddressCard className="mt-[3.5px] shrink-0" />
-  <span className="font-medium">
-    Vendor Add.: <span className="text-gray-600 text-sm">{order?.vendor?.street} {order?.vendor?.city}</span>
-  </span>
-</p>
-          </div>
+) 
 
-          <div className='flex justify-between items-center w-full mt-2'>
-            {order?.status?.toLowerCase() !== "on the way" && (
-              <p className="text-lg font-medium">
-                OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span>
-              </p>
-            )}
+                      : orders?.length > 0 ? (
+                        orders.map((order, index) => {
+                            const isLast = index === orders.length - 1;
+                          return (
+                              <>
+                              <div
+                                key={order.order_id}
+                                ref={isLast ? lastOrderRef : null}
+                              className="bg-white w-full rounded-xl md:p-6 p-2 shadow-md border-gray-300 mb-5 border"
+                            >
+                              {/* OTP + Directions button (Only if not delivered) */}
+                              {order?.status?.toLowerCase() !== "delivered" && (
+                                <div className="flex flex-col">
+                                  <div className="space-y-2">
+                                    <p><span className="font-semibold flex items-center gap-1"> <BsCardList /> Order ID:<span className="text-gray-600 text-sm">{order?.user_order_id}</span> </span></p>
+                                    <p><span className="font-medium flex items-center  gap-1"><MdOutlinePendingActions /> Status: <span className="text-blue-600 font-medium">{order?.status}</span></span> </p>
+                                    <p><span className="font-medium flex items-center gap-1"><FaStore /> Vendor: <span className="text-gray-600 text-sm">{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p>
+                                    <p className="flex items-start gap-1">
+                          <FaRegAddressCard className="mt-[3.5px] shrink-0" />
+                          <span className="font-medium">
+                            Vendor Add.: <span className="text-gray-600 text-sm">{order?.vendor?.street} {order?.vendor?.city}</span>
+                          </span>
+                        </p>
+                                  </div>
+                        
+                                  <div className='flex justify-between items-center w-full mt-2'>
+                                    {order?.status?.toLowerCase() !== "on the way" && (
+                                      <p className="text-lg font-medium">
+                                        OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span>
+                                      </p>
+                                    )}
+                        
+                                    <button
+                                      className="flex items-center text-white gap-1 font-medium bg-orange hover:bg-orange p-1 rounded-md transition"
+                                      onClick={() => {
+                                        const goingToCustomer = order?.status?.toLowerCase() === "on the way";
+                                        const lat = goingToCustomer ? order?.user_lat : order?.vendor_lat;
+                                        const long = goingToCustomer ? order?.user_long : order?.vendor_long;
+                                        window.open(
+                                          `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}`,
+                                          '_blank'
+                                        );
+                                      }}
+                                    >
+                                      <FaDirections />
+                                      {order?.status?.toLowerCase() === "on the way" ? "Go to Customer" : "Go to Vendor"}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                        
+                              {/* Content Section */}
+                              <div className="mt-3">
+                                <div className='gap-2'>
+                                  {order?.status?.toLowerCase() === "on the way" && order?.user && (
+                                    <div className="mt-2">
+                                      <h3 className="font-semibold text-gray-700 mb-1">Items</h3>
+                                      <p className="text-sm text-gray-700">
+                                        {order?.order_item?.map((item, index) => (
+                                          <span key={item.order_item_id}>
+                                            {item?.quantity} x {item?.items?.item_name}
+                                            {index !== order?.order_item?.length - 1 && ', '}
+                                          </span>
+                                        ))}
+                                      </p>
+                        
+                                      <h3 className="font-semibold text-gray-700 mb-1 mt-4">Customer Details</h3>
+                                      <p className="flex items-center gap-2"><FaUser /> {order?.user?.name}</p>
+                                      <p className="flex items-center gap-2"><MdLocationPin />{order?.address?.h_no}, {order?.address?.landmark}</p>
+                                      <p className="flex items-center gap-2"><FaPhone /> {order?.user?.mobile_number}</p>
+                                    </div>
+                                  )}
+                        
+                                  {order?.status?.toLowerCase() === "delivered" && (
+                                    <div className="space-y-2 text-gray-800 text-sm">
+                                     <p className="flex items-start gap-1 flex-wrap">
+                          {/* Icon and "Items:" text */}
+                          <span className="flex items-center font-semibold shrink-0 text-gray-500">
+                            <HiOutlineClipboardList className="mr-1" />
+                            Items:
+                          </span>
+                        
+                          {/* Items list */}
+                          <span className="flex-1 text-gray-800">
+                            {order?.order_item?.map((item, i) => (
+                              <span key={item.order_item_id}>
+                                {item?.quantity} x {item?.items?.item_name}
+                                {i !== order?.order_item?.length - 1 && ', '}
+                              </span>
+                            ))}
+                          </span>
+                        </p>
+                        
+                                      <p><span className="font-semibold flex items-center gap-1 text-gray-500"> <FaUser/> Customer: <span className='font-normal'>{order?.user?.name}</span></span> </p>
+                                      <p><span className="font-semibold flex items-center gap-1 text-gray-500"> <FaStore/> Vendor: <span className='font-normal'>{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p>
+                                      <p><span className="font-semibold flex items-center gap-1 text-gray-500"> <FaClock/> Delivered At: <span className='font-normal'>{new Date(order?.delivered_ts).toLocaleString()}</span></span> </p>
+                                      <p>
+                                        <span className="font-semibold">Payment:</span>
+                                        <span className={`ml-2 px-3 py-1 text-white rounded-full text-sm ${order.payment_mode === 'COD' ? 'bg-red-500' : 'bg-green-500'}`}>
+                                          {order?.payment_mode}
+                                        </span>
+                                      </p>
+                                      <h1 className='w-full p-2 border-green border-1 font-medium text-center bg-green-100'>Delivered</h1>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                        
+                              {/* "Mark as Delivered" button if "on the way" */}
+                              {order?.status?.toLowerCase() === "on the way" && (
+                                <button
+                                onClick={() => {
+                                  setSelectedOrder(order);
+                                  setShowOtpSubmit(true);
+                                }}
+                                
+                                  className="mt-6 mb-5 w-full bg-gradient-to-br from-orange via-yellow cursor-pointer active:scale-95 to-orange text-white py-1 rounded-lg font-semibold shadow-sm transition"
+                                >
+                                  <FaCheckCircle className="inline mr-2" /> Mark as Delivered
+                                </button>
+                                )}
 
-            <button
-              className="flex items-center text-white gap-1 font-medium bg-orange hover:bg-orange p-1 rounded-md transition"
-              onClick={() => {
-                const goingToCustomer = order?.status?.toLowerCase() === "on the way";
-                const lat = goingToCustomer ? order?.user_lat : order?.vendor_lat;
-                const long = goingToCustomer ? order?.user_long : order?.vendor_long;
-                window.open(
-                  `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}`,
-                  '_blank'
-                );
-              }}
-            >
-              <FaDirections />
-              {order?.status?.toLowerCase() === "on the way" ? "Go to Customer" : "Go to Vendor"}
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Content Section */}
-      <div className="mt-3">
-        <div className='gap-2'>
-          {order?.status?.toLowerCase() === "on the way" && order?.user && (
-            <div className="mt-2">
-              <h3 className="font-semibold text-gray-700 mb-1">Items</h3>
-              <p className="text-sm text-gray-700">
-                {order?.order_item?.map((item, index) => (
-                  <span key={item.order_item_id}>
-                    {item?.quantity} x {item?.items?.item_name}
-                    {index !== order?.order_item?.length - 1 && ', '}
-                  </span>
-                ))}
-              </p>
 
-              <h3 className="font-semibold text-gray-700 mb-1 mt-4">Customer Details</h3>
-              <p className="flex items-center gap-2"><FaUser /> {order?.user?.name}</p>
-              <p className="flex items-center gap-2"><MdLocationPin />{order?.address?.h_no}, {order?.address?.landmark}</p>
-              <p className="flex items-center gap-2"><FaPhone /> {order?.user?.mobile_number}</p>
-            </div>
-          )}
 
-          {order?.status?.toLowerCase() === "delivered" && (
-            <div className="space-y-2 text-gray-800 text-sm">
-             <p className="flex items-start gap-1 flex-wrap">
-  {/* Icon and "Items:" text */}
-  <span className="flex items-center font-semibold shrink-0 text-gray-500">
-    <HiOutlineClipboardList className="mr-1" />
-    Items:
-  </span>
+                              </div>
+                              {isLast && loadmore && (
+  <div className="flex justify-center mt-4">
+    <p className="text-sm text-gray-500">Loading more...</p>
+  </div>
+)}
 
-  {/* Items list */}
-  <span className="flex-1 text-gray-800">
-    {order?.order_item?.map((item, i) => (
-      <span key={item.order_item_id}>
-        {item?.quantity} x {item?.items?.item_name}
-        {i !== order?.order_item?.length - 1 && ', '}
-      </span>
-    ))}
-  </span>
-</p>
-
-              <p><span className="font-semibold flex items-center gap-1 text-gray-500"> <FaUser/> Customer: <span className='font-normal'>{order?.user?.name}</span></span> </p>
-              <p><span className="font-semibold flex items-center gap-1 text-gray-500"> <FaStore/> Vendor: <span className='font-normal'>{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p>
-              <p><span className="font-semibold flex items-center gap-1 text-gray-500"> <FaClock/> Delivered At: <span className='font-normal'>{new Date(order?.updated_ts).toLocaleString()}</span></span> </p>
-              <p>
-                <span className="font-semibold">Payment:</span>
-                <span className={`ml-2 px-3 py-1 text-white rounded-full text-sm ${order.payment_mode === 'COD' ? 'bg-red-500' : 'bg-green-500'}`}>
-                  {order?.payment_mode}
-                </span>
-              </p>
-              <h1 className='w-full p-2 border-green border-1 font-medium text-center bg-green-100'>Delivered</h1>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* "Mark as Delivered" button if "on the way" */}
-      {order?.status?.toLowerCase() === "on the way" && (
-        <button
-        onClick={() => {
-          setSelectedOrder(order);
-          setShowOtpSubmit(true);
-        }}
-        
-          className="mt-6 mb-5 w-full bg-gradient-to-br from-orange via-yellow cursor-pointer active:scale-95 to-orange text-white py-1 rounded-lg font-semibold shadow-sm transition"
-        >
-          <FaCheckCircle className="inline mr-2" /> Mark as Delivered
-        </button>
-      )}
-
-   
-    </div>
-  ))
+                              </>
+                        )}
+    
+  )
 ) : (
   <div className="text-center text-gray-500 text-lg font-medium mt-10">
     📦 No active orders found
@@ -409,12 +432,13 @@ export default function DPHomePage() {
                 onClick={async () => {
                   if (!otp || otp.length !== 6) return;
                   setSubmittingOtp(true);
-                      if (parseInt(otp) !== parseInt(selectedOrder?.user_otp)) {
-                    console.log(selectedOrder?.user_otp)
-                    setSubmittingOtp(false);
+                  if (parseInt(otp) !== parseInt(selectedOrder?.user_otp)) {
                     toast.error("Invalid OTP. Please try again.");
+                    console.log(selectedOrder?.user_otp);
+                    setSubmittingOtp(false);
                     return;
                   }
+                  
                   const { success } = await updateOrderStatus(selectedOrder?.order_id, 'delivered');
                   if (success) {
                     setShowOtpSubmit(false);

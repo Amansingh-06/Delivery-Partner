@@ -1,5 +1,5 @@
 import { supabase } from "./Supabase";
-export const fetchOrdersByDP = async (dp_id, statusFilter, limit = 5, offset = 0) => {
+export const fetchOrdersByDP = async (dp_id, statusFilter, limit = 10, offset = 0) => {
   try {
     let query = supabase
       .from('orders')
