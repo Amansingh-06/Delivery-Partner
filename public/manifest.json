@@ -1,6 +1,6 @@
 {
-    "short_name": "XMeals",
-    "name": "XMeals",
+    "short_name": "XMeals DP",
+    "name": "XMeals DP",
     "description": "An open-source meal admin app that helps you order your meals.",
     "start_url": "/",
     "scope": "/",

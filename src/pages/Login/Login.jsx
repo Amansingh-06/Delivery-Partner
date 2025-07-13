@@ -314,7 +314,7 @@ const Login = () => {
                       }`}
                     disabled={sendingOtp} // Only actually disable when sending OTP
                 >
-                    Continue
+                    Next
                     <FaArrowRight className="text-xl" />
                 </button>
 
