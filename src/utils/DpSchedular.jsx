@@ -1,19 +1,6 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "../utils/Supabase";
 
-// ✅ Distance Calculation Function (Haversine Formula)
-function getDistanceInMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // meters
-  const toRad = (value) => (value * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 const SmartDPScheduler = ({ dpId }) => {
   const intervalRef = useRef(null);
 
@@ -22,34 +9,26 @@ const SmartDPScheduler = ({ dpId }) => {
 
     if (!dpId) return console.log("⚠️ No DP ID provided.");
 
+    // ✅ Step 1: Check DP availability
     const { data: dpData, error: dpError } = await supabase
       .from("delivery_partner")
       .select("available, current_location")
       .eq("dp_id", dpId)
       .single();
 
-    if (dpError || !dpData?.available) {
-      console.log("🚫 DP not available.");
-      return;
-    }
+    if (dpError || !dpData?.available) return console.log("🚫 DP not available.");
+    if (!dpData?.current_location) return console.log("❌ No location");
 
-    const dpCoords = dpData.current_location?.coordinates;
-    if (!dpCoords) {
-      console.log("⚠️ DP coordinates missing");
-      return;
-    }
-
+    // ✅ Step 2: Check for active orders
     const { count: activeOrders } = await supabase
       .from("orders")
       .select("order_id", { count: "exact", head: true })
       .eq("dp_id", dpId)
       .in("status", ["accepted", "preparing", "picked", "on the way"]);
 
-    if (activeOrders > 0) {
-      console.log("⛔ DP has active orders.");
-      return;
-    }
+    if (activeOrders > 0) return console.log("⛔ DP has active orders");
 
+    // ✅ Step 3: Check if DP previously assigned
     const { count: assignedCount } = await supabase
       .from("orders")
       .select("order_id", { count: "exact", head: true })
@@ -73,8 +52,6 @@ const SmartDPScheduler = ({ dpId }) => {
           .not("status", "eq", "delivered");
 
         if (undeliveredCount > 0) return;
-
-        console.log("✅ No undelivered orders. Proceeding...");
       } else {
         const { count: totalInGroup } = await supabase
           .from("orders")
@@ -85,6 +62,7 @@ const SmartDPScheduler = ({ dpId }) => {
       }
     }
 
+    // ✅ Step 4: Try assignment with increasing radius
     let radius = 1500;
     let assigned = false;
 
@@ -92,7 +70,7 @@ const SmartDPScheduler = ({ dpId }) => {
       console.log(`📡 Trying RPC with radius: ${radius} meters...`);
 
       const { data: assignData, error: assignError } = await supabase.rpc(
-        "assign_group_to_dp_function",
+        "assign_group_to_dp",
         {
           p_dp_id: dpId,
           p_radius: radius,
@@ -105,49 +83,35 @@ const SmartDPScheduler = ({ dpId }) => {
       }
 
       if (assignData?.length > 0) {
-        const groupId = assignData[0]?.group_id;
+        const groupId = assignData[0].group_id;
+        console.log("🎉 Group assigned to DP:", groupId);
+        assigned = true;
 
-        // 🟡 Fetch vendor location of that group
-        const { data: vendorData } = await supabase
+        // ✅ Step 5: Force status re-update to trigger realtime listeners
+        const { error: updateError } = await supabase
           .from("orders")
-          .select("v_id")
-          .eq("group_id", groupId)
-          .limit(1)
-          .maybeSingle();
+          .update({ status: "preparing" }) // 🔁 Re-update to same status
+          .eq("group_id", groupId);
 
-        if (!vendorData?.v_id) {
-          console.log("⚠️ Vendor not found for group");
-          break;
-        }
-
-        const { data: vendor } = await supabase
-          .from("vendor_request")
-          .select("location")
-          .eq("v_id", vendorData.v_id)
-          .maybeSingle();
-
-        const vendorCoords = vendor?.location?.coordinates;
-        if (!vendorCoords) {
-          console.log("⚠️ Vendor coordinates missing");
-          break;
-        }
-
-        const distance = getDistanceInMeters(
-          vendorCoords[1],
-          vendorCoords[0],
-          dpCoords[1],
-          dpCoords[0]
-        );
-
-        console.log("📏 Distance to vendor:", distance, "meters");
-
-        if (distance <= 5000) {
-          console.log("🎉 Group assigned to DP:", groupId);
-          assigned = true;
-          return;
+        if (updateError) {
+          console.error("⚠️ Failed to trigger realtime update:", updateError.message);
         } else {
-          console.log("❌ Skipping group. Too far from DP.");
+          console.log("🚀 Realtime update triggered by status patch");
         }
+
+        // ✅ Step 6: Optional debug - Log updated orders
+        const { data: assignedOrders, error: fetchError } = await supabase
+          .from("orders")
+          .select("order_id, dp_id, status")
+          .eq("group_id", groupId);
+
+        if (fetchError) {
+          console.error("❌ Could not fetch assigned orders:", fetchError.message);
+        } else {
+          console.log("📦 Orders after assignment:", assignedOrders);
+        }
+
+        return;
       }
 
       radius += 1000;
@@ -163,6 +127,7 @@ const SmartDPScheduler = ({ dpId }) => {
 
     console.log("🧠 [Scheduler] Started for DP:", dpId);
     checkAndAssignDP();
+
     intervalRef.current = setInterval(checkAndAssignDP, 30000);
 
     return () => {

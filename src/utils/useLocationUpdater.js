@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from './Supabase';
 
-const useLocationUpdater = (userId, intervalMs = 10000) => {
+const useLocationUpdater = (userId, intervalMs = 1000000) => {
   const intervalRef = useRef(null);
 
   useEffect(() => {

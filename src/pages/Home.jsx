@@ -152,15 +152,17 @@ export default function DPHomePage() {
     );
   
     // ✅ Realtime Updates
-    useEffect(() => {
-      console.log("📡 Subscribing to realtime updates...");
-      const channel = subscribeToRealtimeOrders(DpId, () => status, setOrders);
+ useEffect(() => {
+  console.log("📡 Subscribing to realtime updates...");
+  
+  const subscription = subscribeToRealtimeOrders(DpId, () => status, setOrders);
 
-      return () => {
-        console.log("🧹 Unsubscribing from realtime...");
-        channel.unsubscribe();
-      };
-    }, [DpId, status]);
+  return () => {
+    console.log("🧹 Unsubscribing from realtime...");
+    subscription.unsubscribe(); // ✅ Now correctly unsubscribes both channels
+  };
+}, [DpId, status]);
+
 
     console.log("📋 Current Orders:", orders.length);
 

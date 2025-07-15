@@ -60,7 +60,7 @@ ${hasMounted ? 'transition-transform duration-300' : ''}
         ${showNavbar ? 'translate-y-0' : '-translate-y-full'}`}>
 
         {/* WAVE BACKGROUND */}
-        <div className="absolute inset-0 rotate-180 rounded-t-xl overflow-hidden  bg-orange-500/50">
+        <div className="absolute inset-0 rotate-180 rounded-t-xl overflow-hidden">
           <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 0 1200 200" preserveAspectRatio="none">
             <defs>
               <linearGradient id="waveGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
