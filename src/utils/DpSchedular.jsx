@@ -1,6 +1,19 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "../utils/Supabase";
 
+// ✅ Distance Calculation Function (Haversine Formula)
+function getDistanceInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // meters
+  const toRad = (value) => (value * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 const SmartDPScheduler = ({ dpId }) => {
   const intervalRef = useRef(null);
 
@@ -9,10 +22,9 @@ const SmartDPScheduler = ({ dpId }) => {
 
     if (!dpId) return console.log("⚠️ No DP ID provided.");
 
-    // Step 1: DP Availability
     const { data: dpData, error: dpError } = await supabase
       .from("delivery_partner")
-      .select("available")
+      .select("available, current_location")
       .eq("dp_id", dpId)
       .single();
 
@@ -20,9 +32,13 @@ const SmartDPScheduler = ({ dpId }) => {
       console.log("🚫 DP not available.");
       return;
     }
-    console.log("✅ DP is available");
 
-    // Step 2: Active Order Check
+    const dpCoords = dpData.current_location?.coordinates;
+    if (!dpCoords) {
+      console.log("⚠️ DP coordinates missing");
+      return;
+    }
+
     const { count: activeOrders } = await supabase
       .from("orders")
       .select("order_id", { count: "exact", head: true })
@@ -33,16 +49,13 @@ const SmartDPScheduler = ({ dpId }) => {
       console.log("⛔ DP has active orders.");
       return;
     }
-    console.log("✅ No active orders");
 
-    // Step 3: Check if DP was ever assigned
     const { count: assignedCount } = await supabase
       .from("orders")
       .select("order_id", { count: "exact", head: true })
       .eq("dp_id", dpId);
 
     if (assignedCount > 0) {
-      // Step 3.a: Get last delivered order
       const { data: lastOrder } = await supabase
         .from("orders")
         .select("group_id, group_seq_no")
@@ -53,92 +66,92 @@ const SmartDPScheduler = ({ dpId }) => {
         .maybeSingle();
 
       if (!lastOrder) {
-        console.log("⛔ No delivered orders found for DP.");
-
-        // Extra safety: check if any undelivered orders exist
         const { count: undeliveredCount } = await supabase
           .from("orders")
           .select("order_id", { count: "exact", head: true })
           .eq("dp_id", dpId)
           .not("status", "eq", "delivered");
 
-        if (undeliveredCount > 0) {
-          console.log("⚠️ DP has undelivered assigned orders.");
-          return;
-        }
+        if (undeliveredCount > 0) return;
 
         console.log("✅ No undelivered orders. Proceeding...");
       } else {
-        // Step 4: Check if it's the last in its group
         const { count: totalInGroup } = await supabase
           .from("orders")
           .select("order_id", { count: "exact", head: true })
           .eq("group_id", lastOrder.group_id);
 
-        if (parseInt(lastOrder.group_seq_no) !== totalInGroup) {
-          console.log("⛔ Group not fully delivered.");
-          return;
+        if (parseInt(lastOrder.group_seq_no) !== totalInGroup) return;
+      }
+    }
+
+    let radius = 1500;
+    let assigned = false;
+
+    while (!assigned && radius <= 5000) {
+      console.log(`📡 Trying RPC with radius: ${radius} meters...`);
+
+      const { data: assignData, error: assignError } = await supabase.rpc(
+        "assign_group_to_dp_function",
+        {
+          p_dp_id: dpId,
+          p_radius: radius,
+        }
+      );
+
+      if (assignError) {
+        console.error("❌ Assignment failed:", assignError.message);
+        break;
+      }
+
+      if (assignData?.length > 0) {
+        const groupId = assignData[0]?.group_id;
+
+        // 🟡 Fetch vendor location of that group
+        const { data: vendorData } = await supabase
+          .from("orders")
+          .select("v_id")
+          .eq("group_id", groupId)
+          .limit(1)
+          .maybeSingle();
+
+        if (!vendorData?.v_id) {
+          console.log("⚠️ Vendor not found for group");
+          break;
         }
 
-        console.log("✅ Last order of group delivered.");
+        const { data: vendor } = await supabase
+          .from("vendor_request")
+          .select("location")
+          .eq("v_id", vendorData.v_id)
+          .maybeSingle();
+
+        const vendorCoords = vendor?.location?.coordinates;
+        if (!vendorCoords) {
+          console.log("⚠️ Vendor coordinates missing");
+          break;
+        }
+
+        const distance = getDistanceInMeters(
+          vendorCoords[1],
+          vendorCoords[0],
+          dpCoords[1],
+          dpCoords[0]
+        );
+
+        console.log("📏 Distance to vendor:", distance, "meters");
+
+        if (distance <= 5000) {
+          console.log("🎉 Group assigned to DP:", groupId);
+          assigned = true;
+          return;
+        } else {
+          console.log("❌ Skipping group. Too far from DP.");
+        }
       }
-    } else {
-      console.log("🆕 DP never had an order. Proceeding...");
+
+      radius += 1000;
     }
-
-    // Step 5: Check if there is any group that has dp_id IS NULL
-    console.log("🔍 Looking for group where dp_id IS NULL...");
-
-    const { data: groupData, error: groupErr } = await supabase
-      .from("orders")
-      .select("group_id")
-      .is("dp_id", null)
-      .neq("group_id", "NA")
-      .limit(1)
-      .maybeSingle();
-
-    if (groupErr) {
-      console.error("❌ Error while checking unassigned groups:", groupErr.message);
-      return;
-    }
-
-    if (!groupData?.group_id) {
-      console.log("ℹ️ No group found without DP.");
-      return;
-    }
-
-    console.log("✅ Found group without DP:", groupData.group_id);
-
-    // ✅ Step 6: Try increasing radius from 1500 → 5000
- let radius = 1500;
-let assigned = false;
-
-while (!assigned && radius <= 5000) {
-  console.log(`📡 Trying RPC with radius: ${radius} meters...`);
-
-  const { data: assignData, error: assignError } = await supabase.rpc("assign_group_to_dp_function", {
-    p_dp_id: dpId,
-    p_radius: radius,
-  });
-
-  if (assignError) {
-    console.error("❌ Assignment failed:", assignError.message);
-    break;
-  }
-
-  if (assignData?.length > 0) {
-    console.log("🎉 Group assigned to DP:", assignData[0].group_id);
-    assigned = true;
-
-    // ✅ Just return from this function, don't stop the scheduler
-    console.log("🛑 Group assigned. Skipping further assignment until delivery.");
-    return; // ❗Sirf iss function se exit — scheduler chalega
-  }
-
-  radius += 1000;
-}
-
-
 
     if (!assigned) {
       console.log("🚫 No group assigned within 5km radius.");
@@ -150,7 +163,6 @@ while (!assigned && radius <= 5000) {
 
     console.log("🧠 [Scheduler] Started for DP:", dpId);
     checkAndAssignDP();
-
     intervalRef.current = setInterval(checkAndAssignDP, 30000);
 
     return () => {
