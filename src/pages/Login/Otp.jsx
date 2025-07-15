@@ -210,9 +210,14 @@ const [loading,setLoading]=useState(false)
     }
 
     // Runs the OTP autofill function when OTP is sent
-    useEffect(() => {
-        attemptOtpAutofill();
-    }, []);
+      useEffect(() => {
+        if (phone) {
+            const timer = setTimeout(() => {
+                attemptOtpAutofill();
+            }, 500);
+            return () => clearTimeout(timer); // Cleanup the timer
+       }
+    }, [phone]);
 
     return (
         <div className="flex flex-col lg:flex-row min-h-screen h-full bg-white">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useState,useEffect} from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Otp from './pages/Login/Otp';
@@ -16,6 +16,43 @@ import AdminProtectedRoute from './Routes/AdminAccess';
 import ScrollToTop from './components/ScrolltoTop';
 
 function App() {
+
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log("✅ You are online");
+      setIsOnline(true);
+    };
+    const handleOffline = () => {
+      console.warn("📴 You are offline");
+      setIsOnline(false);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Initial check
+    if (!navigator.onLine) {
+      console.warn("📴 You are offline at first load");
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // ❌ Don't render anything when offline
+  if (!isOnline) {
+    return (
+      <div style={{ padding: "2rem", textAlign: "center", fontFamily: "sans-serif" }}>
+        <h1>📴 You are offline</h1>
+        <p>Please check your internet connection.</p>
+      </div>
+    );
+  }
+
   return (
     <div className='font-family-poppins bg-gradient-to-br from-white via-gray-50 to-gray-100'>
       {/* <ScrollToTop /> */}

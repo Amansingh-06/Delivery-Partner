@@ -1,6 +1,7 @@
 import React, { useState, useEffect,useRef,useCallback } from 'react';
 import { Switch } from "@headlessui/react";
 import { FaDirections, FaBoxOpen, FaUser, FaCheckCircle } from "react-icons/fa";
+import SmartDPScheduler from '../utils/DpSchedular';
 import BottomNav from '../components/Footer';
 import { MdLocationPin } from "react-icons/md";
 import { FaPhone } from "react-icons/fa6";
@@ -18,16 +19,10 @@ import { FaRegAddressCard } from "react-icons/fa";
 import { BsCardList } from "react-icons/bs";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import { FaClock } from 'react-icons/fa';
-// import { set } from 'mongoose';
-
-
-
-
-
 
 export default function DPHomePage() {
   const { dpProfile, session } = useAuth();
-  const dpId = "43c6aeba-34e0-4ad7-9caf-9eb661b2e043"; // fallback
+  // const dpId = "43c6aeba-34e0-4ad7-9caf-9eb661b2e043"; // fallback
   const LIMIT = 5;
   
   const [showOtpSubmit, setShowOtpSubmit] = useState(false);
@@ -92,8 +87,8 @@ export default function DPHomePage() {
     // ✅ Fetch Orders with Pagination
     const fetchOrders = useCallback(
       async (reset = false) => {
-        if (!dpId || isLoading) {
-          console.log("⏸ Skipping fetchOrders. dpId:", dpId, "isLoading:", isLoading);
+        if (!DpId || isLoading) {
+          console.log("⏸ Skipping fetchOrders. dpId:", DpId, "isLoading:", isLoading);
           return;
         }
   
@@ -109,7 +104,7 @@ export default function DPHomePage() {
         if (!reset) setLoadMore(true);
   
         setIsLoading(true);
-        const result = await fetchOrdersByDP(dpId, status, LIMIT, currentOffset);
+        const result = await fetchOrdersByDP(DpId, status, LIMIT, currentOffset);
   
         if (result.success) {
           console.log("✅ Orders fetched:", result.data.length);
@@ -129,15 +124,15 @@ export default function DPHomePage() {
         setIsLoading(false);
         setLoadMore(false);
       },
-      [dpId, status, offset, isLoading]
+      [DpId, status, offset, isLoading]
     );
   
     // ✅ Fetch Orders on Status Change
     useEffect(() => {
       console.log("🧹 Resetting orders for status:", status);
       fetchOrders(true);
-    }, [status, dpId]);
-  
+    }, [status, DpId]);
+
     // ✅ Infinite Scroll
     const lastOrderRef = useCallback(
       (node) => {
@@ -159,22 +154,22 @@ export default function DPHomePage() {
     // ✅ Realtime Updates
     useEffect(() => {
       console.log("📡 Subscribing to realtime updates...");
-      const channel = subscribeToRealtimeOrders(dpId, () => status, setOrders);
-    
+      const channel = subscribeToRealtimeOrders(DpId, () => status, setOrders);
+
       return () => {
         console.log("🧹 Unsubscribing from realtime...");
         channel.unsubscribe();
       };
-    }, [dpId, status]); 
-    
-  
+    }, [DpId, status]);
+
     console.log("📋 Current Orders:", orders.length);
 
 
     const DEFAULT_PHOTO = "./defaultuserImage.jpg";
 
     return (
-        <div className="mx-auto    text-gray-800 ">
+      <div className="mx-auto    text-gray-800 ">
+        <SmartDPScheduler dpId={DpId} /> 
             <div className='max-w-2xl  mx-auto p-2  min-h-[85vh]   shadow-lg'>
                 {/* <Header title='Order' /> */}
 {dpProfile?.status === "blocked" ? (
