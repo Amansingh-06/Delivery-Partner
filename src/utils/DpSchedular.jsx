@@ -87,19 +87,7 @@ const SmartDPScheduler = ({ dpId }) => {
         console.log("🎉 Group assigned to DP:", groupId);
         assigned = true;
 
-        // ✅ Step 5: Force status re-update to trigger realtime listeners
-        const { error: updateError } = await supabase
-          .from("orders")
-          .update({ status: "preparing" }) // 🔁 Re-update to same status
-          .eq("group_id", groupId);
-
-        if (updateError) {
-          console.error("⚠️ Failed to trigger realtime update:", updateError.message);
-        } else {
-          console.log("🚀 Realtime update triggered by status patch");
-        }
-
-        // ✅ Step 6: Optional debug - Log updated orders
+        // ✅ Step 5: Optional debug - Log updated orders
         const { data: assignedOrders, error: fetchError } = await supabase
           .from("orders")
           .select("order_id, dp_id, status")

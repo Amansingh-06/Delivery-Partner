@@ -1,45 +1,36 @@
 import { supabase } from "./Supabase";
 
 export function subscribeToRealtimeOrders(dpId, getStatus, setOrders) {
-  // ✅ Channel: updates where dp_id matches
+  if (!dpId) {
+    console.warn("⚠️ Realtime subscription skipped: No DP ID provided");
+    return { unsubscribe: () => {} };
+  }
+
+  console.log("📡 Subscribing to realtime orders for DP:", dpId);
+
+  // ✅ DP Channel (only for events where dp_id already matched)
   const dpChannel = supabase.channel("realtime-orders-dp");
 
   dpChannel
     .on(
       "postgres_changes",
-      {
-        event: "*", // ✅ Covers INSERT / UPDATE / DELETE
-        schema: "public",
-        table: "orders",
-        filter: `dp_id=eq.${dpId}`,
-      },
+      { event: "*", schema: "public", table: "orders", filter: `dp_id=eq.${dpId}` },
       async (payload) => {
-        console.log("📡 [DP Channel] Event Received:", payload);
+        console.log("📡 [DP Channel] Event:", payload);
 
-        const updatedOrder = payload.new;
-        const statusFilter = getStatus();
+        if (payload.eventType === "DELETE") {
+          const deletedOrder = payload.old;
+          console.log("🗑️ [DP] Order deleted:", deletedOrder.order_id);
 
-        const matchesFilter =
-          (statusFilter === "Pick up" &&
-            ["accepted", "preparing", "prepared"].includes(updatedOrder.status)) ||
-          (statusFilter === "With You" && updatedOrder.status === "on the way") ||
-          (statusFilter === "Delivered" && updatedOrder.status === "delivered");
-
-        if (!matchesFilter) {
-          console.log("❌ [DP Channel] Doesn't match filter");
-          setOrders((prev) =>
-            prev.filter((o) => o.order_id !== updatedOrder.order_id)
-          );
+          setOrders((prev) => prev.filter((o) => o.order_id !== deletedOrder.order_id));
           return;
         }
 
-        console.log("✅ [DP Channel] Updating order");
-        setOrders((prev) => {
-          const index = prev.findIndex(
-            (o) => o.order_id === updatedOrder.order_id
-          );
-          if (index === -1) return [...prev, updatedOrder];
+        const updatedOrder = payload.new;
 
+        setOrders((prev) => {
+          const index = prev.findIndex((o) => o.order_id === updatedOrder.order_id);
+          if (index === -1) return [...prev, updatedOrder];
           const updated = [...prev];
           updated[index] = { ...updated[index], ...updatedOrder };
           return updated;
@@ -48,47 +39,50 @@ export function subscribeToRealtimeOrders(dpId, getStatus, setOrders) {
     )
     .subscribe();
 
-  // ✅ Broad Channel: newly assigned to this DP
+  // ✅ Broad Channel (watches all dp_id changes and deletions)
   const broadChannel = supabase.channel("realtime-orders-dp-broad");
 
   broadChannel
     .on(
       "postgres_changes",
-      {
-        event: "*", // ✅ ALL events
-        schema: "public",
-        table: "orders",
-      },
+      { event: "*", schema: "public", table: "orders" },
       async (payload) => {
-        console.log("📡 [Broad Channel] Event:", payload);
-
         const oldDp = payload.old?.dp_id;
         const newDp = payload.new?.dp_id;
+        const updatedOrder = payload.new;
 
-        if (oldDp === null && newDp === dpId) {
-          const updatedOrder = payload.new;
-          const statusFilter = getStatus();
+        console.log("📡 [Broad Channel] Event Received");
+        console.log("   ▶️ oldDp:", oldDp);
+        console.log("   ▶️ newDp:", newDp);
+        console.log("   ▶️ this dpId:", dpId);
 
-          const matchesFilter =
-            (statusFilter === "Pick up" &&
-              ["accepted", "preparing", "prepared"].includes(updatedOrder.status)) ||
-            (statusFilter === "With You" && updatedOrder.status === "on the way") ||
-            (statusFilter === "Delivered" && updatedOrder.status === "delivered");
+        if (payload.eventType === "DELETE") {
+          const deletedOrder = payload.old;
+          if (deletedOrder.dp_id === dpId) {
+            console.log("🗑️ [Broad] Order deleted for this DP:", deletedOrder.order_id);
+            setOrders((prev) => prev.filter((o) => o.order_id !== deletedOrder.order_id));
+          }
+          return;
+        }
 
-          if (!matchesFilter) return;
-
-          console.log("🆕 [Broad Channel] Newly assigned to this DP");
-
+        // ✅ If this DP is newly assigned
+        if (newDp === dpId) {
+          console.log("🆕 [Broad] Order assigned to this DP");
           setOrders((prev) => {
-            const index = prev.findIndex(
-              (o) => o.order_id === updatedOrder.order_id
-            );
+            const index = prev.findIndex((o) => o.order_id === updatedOrder.order_id);
             if (index === -1) return [...prev, updatedOrder];
-
             const updated = [...prev];
             updated[index] = { ...updated[index], ...updatedOrder };
             return updated;
           });
+        }
+
+        // ✅ If this DP is unassigned
+        if (oldDp === dpId && newDp !== dpId) {
+          console.log("❌ [Broad] Order removed from this DP");
+          setOrders((prev) =>
+            prev.filter((o) => o.order_id !== payload.old.order_id)
+          );
         }
       }
     )
@@ -96,7 +90,7 @@ export function subscribeToRealtimeOrders(dpId, getStatus, setOrders) {
 
   return {
     unsubscribe: () => {
-      console.log("🧹 Unsubscribing realtime...");
+      console.log("🧹 Unsubscribing from realtime updates");
       dpChannel.unsubscribe();
       broadChannel.unsubscribe();
     },
