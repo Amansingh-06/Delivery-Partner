@@ -14,6 +14,7 @@ import Earnings from './pages/Earnings';
 import Layout from './pages/Layout';
 import AdminProtectedRoute from './Routes/AdminAccess';
 import ScrollToTop from './components/ScrolltoTop';
+import BackRedirect from './components/BackRedirect';
 
 function App() {
 
@@ -57,6 +58,7 @@ function App() {
     <div className='font-family-poppins bg-gradient-to-br from-white via-gray-50 to-gray-100'>
       {/* <ScrollToTop /> */}
       <Router>
+        <BackRedirect />
         <Routes>
           {/* 🔐 Guest Routes */}
           <Route
