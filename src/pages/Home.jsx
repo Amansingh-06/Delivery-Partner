@@ -161,7 +161,7 @@ export default function DPHomePage() {
     console.log("🧹 Unsubscribing from realtime...");
     subscription.unsubscribe(); // ✅ Now correctly unsubscribes both channels
   };
-}, [DpId, status]);
+}, [DpId]);
 
 
     console.log("📋 Current Orders:", orders.length);
