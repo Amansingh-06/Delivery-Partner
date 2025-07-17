@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/auth";
 import { useAuth } from "../Context/authContext";
 import Loader from "../components/Loader";
+import { BiMessage } from 'react-icons/bi';
 import {
   GiFullPizza,
   GiFrenchFries,
@@ -88,23 +89,35 @@ ${hasMounted ? 'transition-transform duration-300' : ''}
         ))}
 
         {/* HEADER CONTENT */}
-        <div className={`relative z-10 flex items-center p-4 w-full max-w-2xl mx-auto 
-          ${title === "Profile" ? "justify-between" : "justify-center"}`}>
-          <h1 className={`text-2xl font-semibold text-white`}>
-            {title}
-          </h1>
+       <div className={`relative z-10 flex items-center p-4 w-full max-w-2xl mx-auto 
+  ${title === "Profile" || title === "Order" ? "justify-between" : "justify-start"}`}>
+  <h1 className={`text-2xl font-semibold text-white`}>
+    {title}
+  </h1>
 
-          {title === "Profile" && (
-            <button
-              onClick={() => logout(setSession, setLoggingOut)}
-              disabled={loggingOut}
-              className="button-gradientBG cursor-pointer text-white flex items-center px-3 lg:px-4 py-1 lg:py-2 rounded-md text-lg lg:text-sm hover:bg-orange transition"
-            >
-              <CiLogout className="inline-block mr-1 text-lg" />
-              {loggingOut ? "Logging out..." : "Logout"}
-            </button>
-          )}
-        </div>
+  {title === "Profile" && (
+    <button
+      onClick={() => logout(setSession, setLoggingOut)}
+      disabled={loggingOut}
+      className="button-gradientBG cursor-pointer text-white flex items-center px-3 lg:px-4 py-1 lg:py-2 rounded-md text-lg lg:text-sm hover:bg-orange transition"
+    >
+      <CiLogout className="inline-block mr-1 text-lg" />
+      {loggingOut ? "Logging out..." : "Logout"}
+    </button>
+  )}
+
+  {/* 👇 Help button for Order page */}
+  {title === "Order" && (
+    <div className="flex items-center gap-2 lg:gap-4">
+        <button onClick={() => navigate('/support')}  className="flex  justify-center items-center gap-1 p-1 lg:p-2 text-orange bg-gray-100 hover:bg-white/90 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 group backdrop-blur-sm border border-white/10 hover:border-white/30 cursor-pointer">
+        <BiMessage className="text-sm lg:text-2xl mt-[1px]" />
+          <div className="text-xs lg:text-base font-medium">Help</div>
+
+        </button>
+      </div>
+  )}
+</div>
+
 
         {/* Optional children content inside header (e.g., navbar) */}
         {children && (

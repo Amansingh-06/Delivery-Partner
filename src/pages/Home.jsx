@@ -206,10 +206,10 @@ export default function DPHomePage() {
               <>
                 <div className='max-w-2xl  mx-auto md:p-6   md:mt-5 py-10 min-h-[85vh]   '>
                     <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-4 ">
+                        <div className="flex items-center gap-2 ">
                             <img src={dpProfile?.photo_url || DEFAULT_PHOTO} alt="Profile" className="w-14 h-14 rounded-full shadow-md" />
                             <div>
-                                <h2 className="md:text-2xl text-lg text-gray-800 font-bold">Hi, {dpProfile?.name}</h2>
+                                <h2 className="md:text-xl text-lg text-gray-800 font-bold">{truncateLetters(dpProfile?.name,12)}</h2>
                                 <p className="text-sm text-gray-600">
                                     {isOnline === null ? "Loading..." : isOnline ? "Online" : "Offline"}
                                 </p>

@@ -16,6 +16,8 @@ import Header from "./Header";
 import BottomNav from "../components/Footer";
 import { supabase } from "../utils/Supabase"; // 👈 import your Supabase client
 import { subscribeToRealtimeOrders } from "../utils/subscribeToRealtimeOrders"; // 👈 import your realtime util
+import { fetchDpRatings } from "../utils/fetchDPrating";
+import { fetchDpRatingStats } from "../utils/dpRatingStats";
 
 export default function Earnings() {
   const [orders, setOrders] = useState([]);
@@ -26,6 +28,14 @@ export default function Earnings() {
   const [selectedStats, setSelectedStats] = useState({ earnings: 0, orders: 0 });
   const [showCalendar, setShowCalendar] = useState(false);
   const { dpProfile } = useAuth(); // 👈 Get delivery partner profile from context
+    const [ratings, setRatings] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [ratingStats, setRatingStats] = useState({
+    averageRating: 0,
+    totalCustomers: 0,
+  });
+  const LIMIT = 5;
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -33,7 +43,7 @@ export default function Earnings() {
   const monthStart = startOfMonth(today);
   const monthEnd = today;
 
-const dpId = '43c6aeba-34e0-4ad7-9caf-9eb661b2e043'; // 👈 Replace with actual delivery partner ID
+const dpId = dpProfile?.dp_id; // 👈 Replace with actual delivery partner ID
 
   // 🔄 Fetch orders on mount
   useEffect(() => {
@@ -108,6 +118,80 @@ console.log("Order Date:", date, "Amount:", amount);
     setSelectedStats({ earnings, orders: ordersCount });
   }, [orders, dateRange]);
 
+
+  //rating
+console.log("dpId",dpId,dpProfile?.status)
+    useEffect(() => {
+    if (dpId && dpProfile?.status === "verified") {
+      // Reset on vendor change
+      setRatings([]);
+      setPage(1);
+      setHasMore(true);
+    }
+  }, [dpId, dpProfile?.status]);
+
+  useEffect(() => {
+    if (dpId && dpProfile?.status === "verified") {
+      loadMoreRatings();
+    }
+  }, [page, dpId,dpProfile?.status]);
+
+const loadMoreRatings = async () => {
+  
+  const { success, data } = await fetchDpRatings(dpId, page, LIMIT);
+  console.log("🚀 fetchDpRatings response:", { success, data });
+
+  if (success && Array.isArray(data)) {
+    // ✅ Remove duplicate reviews using r_id
+    setRatings((prev) => {
+      const newIds = new Set(prev.map((r) => r.r_id));
+      const filtered = data.filter((r) => !newIds.has(r.r_id));
+      return [...prev, ...filtered];
+    });
+
+    if (data.length < LIMIT) {
+      setHasMore(false);
+    }
+  }
+};
+
+
+  // console.log(ratings," ratings");
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 1 }
+    );
+
+    const sentinel = document.getElementById("load-more-ratings-sentinel");
+    if (sentinel) observer.observe(sentinel);
+
+    return () => {
+      if (sentinel) observer.disconnect();
+    };
+  }, [ratings, hasMore]);
+
+   useEffect(() => {
+    if (dpId && dpProfile?.status === "verified") {
+      const getRatingStats = async () => {
+        const { success, averageRating, totalCustomers } =
+          await fetchDpRatingStats(dpId);
+        if (success) {
+          setRatingStats({ averageRating, totalCustomers });
+        }
+      };
+  
+      getRatingStats();
+    }
+  }, [dpId, dpProfile?.status]);
+
+  console.log("rating", ratings);
+
   return (
     <div className="min-h-[89.5vh]   max-w-2xl mx-auto space-y-6">
       {/* <h1 className="text-2xl font-bold text-center">Earnings</h1>
@@ -180,36 +264,103 @@ console.log("Order Date:", date, "Amount:", amount);
               </div>
             </section>
 
-            {/* Ratings */}
-            {/* <section className="bg-white p-6 rounded-xl shadow-lg mb-15">
-        <h2 className="text-lg font-semibold text-gray-700 mb-4">Ratings & Reviews</h2>
-        {ratings.length === 0 ? (
-          <p className="text-gray-500 text-sm">No ratings yet.</p>
-        ) : (
-          <>
-            {ratings.map((rating) => (
-              <div key={rating.r_id} className="p-4 border rounded bg-gray-50 mb-2">
-                <div className="flex items-center gap-3">
-                  <img src={rating.user.dp_url} className="w-10 h-10 rounded-full" />
-                  <p className="font-semibold">{rating.user.name}</p>
-                </div>
-                <p className="text-sm text-gray-600 mt-2">Items: {rating.order.order_item.map((oi) => oi.items.item_name).join(", ")}</p>
-                <div className="flex justify-between text-sm mt-2">
-                  <span className="text-yellow-600">
-                    {"⭐".repeat(rating.rating_number)}{"☆".repeat(5 - rating.rating_number)} ({rating.rating_number}.0)
-                  </span>
-                  <span className="text-green-600 font-semibold">₹{rating.order.total_amount}</span>
-                </div>
-              </div>
-            ))}
-            {hasMore && (
-              <div id="load-more-ratings-sentinel" className="text-center text-gray-400 mt-4">
-                Loading more...
-              </div>
-            )}
-          </>
-        )}
-              </section> */}
+                        {/* Ratings & Reviews */}
+              <section className="bg-white rounded-lg shadow p-4 md:p-4  -mt-10 mb-10">
+  <h2 className="text-md md:text-2xl lg:text-2xl font-medium text-gray uppercase mb-4">
+    Ratings & Reviews
+                    </h2>
+                    <div className="my-4 p-4 bg-white rounded-lg shadow">
+                    <p>
+  Your store is rated ⭐ {ratingStats.averageRating} by {ratingStats.totalCustomers} customer
+  {ratingStats.totalCustomers !== 1 ? "s" : ""}
+                    </p>
+                    {console.log("ratingStats",ratingStats)}
+
+                    </div>
+
+  {ratings.length === 0 ? (
+    <p className="text-gray-500 text-sm">No ratings yet.</p>
+  ) : (
+    <div className="space-y-4">
+      {ratings.map((rating) => (
+        <div
+          key={rating?.id}
+          className="border-orange-200 shadow-all border-1 p-4 rounded-lg bg-gray-50 space-y-1"
+        >
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-3">
+              <img
+                src={
+                  !rating.user?.dp_url || rating.user?.dp_url === "NA"
+                    ? "/defaultuserImage.jpg"
+                    : rating.user.dp_url
+                }
+                className="w-10 h-10 rounded-full"
+                alt="User DP"
+              />
+              <div>
+                <h3 className="font-semibold text-gray-800">
+                  {console.log('rating', rating)}
+                  {rating?.user?.name}
+                </h3>
+
+
+            </div>
+            </div>
+          </div>
+
+       
+
+          <div className="flex justify-between items-center text-sm mt-1">
+          <div className="text-yellow-500 leading-tight flex items-center gap-1">
+  {/* Filled stars */}
+  {"⭐".repeat(rating?.rating).split("").map((star, i) => (
+    <span key={`filled-${i}`} className="text-base">
+      {star}
+    </span>
+  ))}
+
+  {/* Unfilled stars with bigger size */}
+  {"☆".repeat(5 - rating?.rating).split("").map((star, i) => (
+    <span key={`unfilled-${i}`} className="text-xl text-yellow-400">
+      {star}
+    </span>
+  ))}
+
+  {/* Rating text */}
+  <span className="ml-1 text-sm text-black">({rating?.rating}.0)</span>
+</div>
+            
+
+            
+          </div>
+ 
+
+
+
+
+
+
+
+
+
+
+
+        </div>
+      ))}
+
+      {/* 👇 Infinite scroll sentinel 👇 */}
+      {hasMore && (
+        <div
+          id="load-more-ratings-sentinel"
+          className="h-10 w-full text-center text-gray-400"
+        >
+          Loading more...
+        </div>
+      )}
+    </div>
+  )}
+</section>
           </>
         )
         }

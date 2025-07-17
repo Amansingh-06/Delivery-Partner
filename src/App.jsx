@@ -15,6 +15,7 @@ import Layout from './pages/Layout';
 import AdminProtectedRoute from './Routes/AdminAccess';
 import ScrollToTop from './components/ScrolltoTop';
 import BackRedirect from './components/BackRedirect';
+import Support from './pages/ContactSupport';
 
 function App() {
 
@@ -98,6 +99,8 @@ function App() {
             <Route path="/home" element={<HomePage />} />
             <Route path="/profile" element={<Dp_Profile />} />
             <Route path="/earning" element={<Earnings />} />
+            <Route path = "/support" element={<Support/>}/>
+            
             {/* You can add more private routes here */}
           </Route>
         </Routes>
