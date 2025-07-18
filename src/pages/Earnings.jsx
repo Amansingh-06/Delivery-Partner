@@ -260,7 +260,7 @@ const loadMoreRatings = async () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 <InsightCard label="Earnings" value={`₹${selectedStats.earnings}`} />
                 <InsightCard label="Orders" value={selectedStats.orders} />
-                <InsightCard label="Rejected" value={`₹$0 (0 orders)`} />
+                <InsightCard label="Rejected" value={`₹0 (0 orders)`} />
               </div>
             </section>
 

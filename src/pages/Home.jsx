@@ -19,6 +19,9 @@ import { FaRegAddressCard } from "react-icons/fa";
 import { BsCardList } from "react-icons/bs";
 import { HiOutlineClipboardList } from "react-icons/hi";
 import { FaClock } from 'react-icons/fa';
+import { MdRestaurantMenu } from 'react-icons/md';
+import { FaMoneyBillWave } from 'react-icons/fa';
+
 
 export default function DPHomePage() {
   const { dpProfile, session } = useAuth();
@@ -36,7 +39,9 @@ export default function DPHomePage() {
   const [otp, setOtp] = useState('')
   const [submittingOtp, setSubmittingOtp] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const {selectedDpId} = useAuth()
+  const { selectedDpId } = useAuth()
+  const [showCollectCashModal, setShowCollectCashModal] = useState(false);
+
   const DpId = dpProfile?.dp_id || selectedDpId; // ✅ fallback
 
   
@@ -259,13 +264,38 @@ export default function DPHomePage() {
                               <div
                                 key={order.order_id}
                                 ref={isLast ? lastOrderRef : null}
-                              className="bg-white w-full rounded-xl md:p-6 p-2 shadow-md border-gray-300 mb-5 border"
+                              className="bg-white w-full   rounded-xl md:p-6 p-2  shadow-md border-gray-300 mb-5  border-2"
                             >
                               {/* OTP + Directions button (Only if not delivered) */}
                               {order?.status?.toLowerCase() !== "delivered" && (
-                                <div className="flex flex-col">
-                                  <div className="space-y-2">
-                                    <p><span className="font-semibold flex items-center gap-1"> <BsCardList /> Order ID:<span className="text-gray-600 text-sm">{order?.user_order_id}</span> </span></p>
+                                  <div className="flex flex-col  ">
+                                    <div className="space-y-2">
+                                      <div className='flex justify-between items-center'>
+                                        <p><span className="font-semibold flex items-center gap-1"> <BsCardList /> Order ID:<span className="text-gray-600 text-sm">{order?.user_order_id}</span> </span></p>
+                                                                             <div className="flex flex-col relative">
+  <p className="text-black">
+    <span className="text-gray-800 font-medium">Sr.no:</span> {order?.group_seq_no}
+  </p>
+
+  {/* Delay check condition */}
+  {order?.eta && (() => {
+    const etaTime = new Date(order.eta).getTime();
+    const currentTime = Date.now();
+    const diffMinutes = (etaTime - currentTime) / (1000 * 60);
+    if (diffMinutes <= 10) {
+      return (
+        <span className="text-red-600  absolute top-6 text-xs">
+          Delayed
+        </span>
+      );
+    }
+    return null;
+  })()}
+</div>
+
+
+
+                                      </div>
                                     <p><span className="font-medium flex items-center  gap-1"><MdOutlinePendingActions /> Status: <span className="text-blue-600 font-medium">{order?.status}</span></span> </p>
                                     <p><span className="font-medium flex items-center gap-1"><FaStore /> Vendor: <span className="text-gray-600 text-sm">{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p>
                                     <p className="flex items-start gap-1">
@@ -273,10 +303,35 @@ export default function DPHomePage() {
                           <span className="font-medium">
                             Vendor Add.: <span className="text-gray-600 text-sm">{order?.vendor?.street} {order?.vendor?.city}</span>
                           </span>
-                        </p>
+                                      </p>
+                                      <p><span className='font-medium flex  item-center gap-1'> <MdRestaurantMenu className='mt-1'/ > Items</span>
+                                        {order?.order_item?.map((item, index) => (
+                                          <span key={item.order_item_id} className='text-gray-600 text-sm'>
+                                            {item?.quantity} x {item?.items?.item_name}
+                                            {index !== order?.order_item?.length - 1 && ', '}
+                                          </span>
+                                        ))}
+
+                                      </p>
+                                      <p>
+                                        <p className="flex items-center gap-2">
+                                          <span className='flex items-center gap-1'><FaUser /> User:</span>
+  
+  <img
+    src={
+      order?.user?.dp_url && order.user.dp_url !== "NA"
+        ? order.user.dp_url
+        : "./defaultuserImage.jpg"
+    }
+    alt="user"
+    className="w-6 h-6 rounded-full object-fill"
+  />
+  {order?.user?.name}
+</p>
+</p>
                                   </div>
                         
-                                  <div className='flex justify-between items-center w-full mt-2'>
+                                  <div className='flex justify-between items-center w-full mt-2 '>
                                     {order?.status?.toLowerCase() !== "on the way" && (
                                       <p className="text-lg font-medium">
                                         OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span>
@@ -304,10 +359,10 @@ export default function DPHomePage() {
                         
                               {/* Content Section */}
                               <div className="mt-3">
-                                <div className='gap-2'>
+                                <div className='gap-2 '>
                                   {order?.status?.toLowerCase() === "on the way" && order?.user && (
                                     <div className="mt-2">
-                                      <h3 className="font-semibold text-gray-700 mb-1">Items</h3>
+                                      {/* <h3 className="font-semibold text-gray-700 mb-1">Items</h3>
                                       <p className="text-sm text-gray-700">
                                         {order?.order_item?.map((item, index) => (
                                           <span key={item.order_item_id}>
@@ -315,12 +370,24 @@ export default function DPHomePage() {
                                             {index !== order?.order_item?.length - 1 && ', '}
                                           </span>
                                         ))}
-                                      </p>
+                                        </p> */}
+
+                                        
                         
                                       <h3 className="font-semibold text-gray-700 mb-1 mt-4">Customer Details</h3>
-                                      <p className="flex items-center gap-2"><FaUser /> {order?.user?.name}</p>
-                                      <p className="flex items-center gap-2"><MdLocationPin />{order?.address?.h_no}, {order?.address?.landmark}</p>
-                                      <p className="flex items-center gap-2"><FaPhone /> {order?.user?.mobile_number}</p>
+                                      <p className="flex items-center mb-1 gap-2"><FaUser /> {order?.user?.name}</p>
+                                      <p className="flex items-center mb-1 gap-2"><MdLocationPin />{order?.address?.h_no}, {order?.address?.landmark}</p>
+<a href={`tel:${order?.user?.mobile_number}`} className="flex items-center mb-1 gap-2 text-blue-600 hover:underline">
+  <FaPhone className="cursor-pointer" />
+  {order?.user?.mobile_number}
+                                        </a>
+                                        {order?.payment_mode.toLowerCase() === "cash" && (
+                                          <p className="font-medium text-gray-800 gap-2 flex  items-center">
+                                            <FaMoneyBillWave/>
+    Amount to Collect: <span className='text-black font-semibold'>₹{(selectedOrder?.discounted_amount).toFixed(2)}</span> 
+  </p>
+)}
+
                                     </div>
                                   )}
                         
@@ -434,9 +501,12 @@ export default function DPHomePage() {
                     console.log(selectedOrder?.user_otp);
                     setSubmittingOtp(false);
                     return;
-                  }
-                  
-                  const { success } = await updateOrderStatus(selectedOrder?.order_id, 'delivered');
+                      }
+                      if (selectedOrder?.payment_mode?.toLowerCase() === "cash") {
+                        setShowOtpSubmit(false);
+                        setShowCollectCashModal(true);
+                      } else {
+                        const { success } = await updateOrderStatus(selectedOrder?.order_id, 'delivered');
                   if (success) {
                     setShowOtpSubmit(false);
                     setOtp("");
@@ -446,6 +516,10 @@ export default function DPHomePage() {
                   } else {
                     toast.error("Something went wrong. Try again.");
                   }
+                        
+                      }
+                  
+                  
                   setSubmittingOtp(false);
                 }}
                 className={`px-3 py-1 rounded text-white ${otp.length === 6 ? 'bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
@@ -458,7 +532,45 @@ export default function DPHomePage() {
             </div>
           </div>
         </div>
-      )}
+          )}
+          
+          {showCollectCashModal && (
+  <div className="inset-0 z-50 backdrop-blur-sm bg-black/30 fixed flex justify-center items-center">
+    <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-sm space-y-4">
+      <h3 className="text-xl font-bold text-gray-800">Collect the Cash</h3>
+                <p className="text-gray-600">Please confirm that you have collected ₹{(selectedOrder?.discounted_amount).toFixed(2)}</p>
+      <div className="flex justify-end gap-2 pt-4">
+        <button
+          onClick={() => {
+            setShowCollectCashModal(false);
+            toast.info("Cash collection cancelled.");
+          }}
+          className="px-4 py-2 rounded bg-gray-300 text-gray-700"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={async () => {
+            const { success } = await updateOrderStatus(selectedOrder?.order_id, "delivered");
+            if (success) {
+              setShowCollectCashModal(false);
+              setOtp("");
+              setStatus("Delivered");
+              onStatusUpdate?.(selectedOrder?.order_id);
+              toast.success("Order marked as Delivered.");
+            } else {
+              toast.error("Failed to update order.");
+            }
+          }}
+          className="px-4 py-2 rounded bg-green-600 text-white"
+        >
+          Confirm Collection
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
             </div>
             <BottomNav />
         </div>
