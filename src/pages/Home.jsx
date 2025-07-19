@@ -315,12 +315,12 @@ export default function DPHomePage() {
                                       </p>
                                       <p>
                                         <p className="flex items-center gap-2">
-                                          <span className='flex items-center gap-1'><FaUser /> User:</span>
+                                          <span className='flex items-center gap-1'><FaUser /></span>
   
   <img
     src={
       order?.user?.dp_url && order.user.dp_url !== "NA"
-        ? order.user.dp_url
+        ? order?.user?.dp_url
         : "./defaultuserImage.jpg"
     }
     alt="user"
@@ -384,7 +384,11 @@ export default function DPHomePage() {
                                         {order?.payment_mode.toLowerCase() === "cash" && (
                                           <p className="font-medium text-gray-800 gap-2 flex  items-center">
                                             <FaMoneyBillWave/>
-    Amount to Collect: <span className='text-black font-semibold'>₹{(selectedOrder?.discounted_amount).toFixed(2)}</span> 
+    Amount to Collect: <span className='text-black font-semibold'>
+₹{(order?.discounted_amount ?? 0).toFixed(2)}
+                                                                
+
+</span>
   </p>
 )}
 
@@ -538,7 +542,11 @@ export default function DPHomePage() {
   <div className="inset-0 z-50 backdrop-blur-sm bg-black/30 fixed flex justify-center items-center">
     <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-sm space-y-4">
       <h3 className="text-xl font-bold text-gray-800">Collect the Cash</h3>
-                <p className="text-gray-600">Please confirm that you have collected ₹{(selectedOrder?.discounted_amount).toFixed(2)}</p>
+<p className="text-gray-600">
+  Please confirm that you have collected ₹
+₹{(selectedOrder?.discounted_amount ?? 0).toFixed(2)}
+                  {console.log(selectedOrder,"SSSS")}
+</p>
       <div className="flex justify-end gap-2 pt-4">
         <button
           onClick={() => {
