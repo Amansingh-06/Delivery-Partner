@@ -102,7 +102,6 @@ const Otp = () => {
         if (navType === "POP" || !location?.state) {
             navigate("/", { replace: true });
         } else {
-            console.log(location?.state);
             setPhone(location?.state?.phone);
             setIsLogin(location?.state?.isLogin);
             setCountryCode(location?.state?.countryCode);
@@ -117,7 +116,8 @@ const Otp = () => {
     const [authenticating, setAuthenticating] = useState(false);
 
     /********************    verify otp ********************/
-const [loading,setLoading]=useState(false)
+    const [loading, setLoading] = useState(false)
+    const [otpError,setOtpError]=useState('')
 
     const onSubmit = async (data, event) => {
         setLoading(true)
@@ -136,10 +136,8 @@ const [loading,setLoading]=useState(false)
 
             if (!validateOtp(otpValue)) return;
 
-            console.log("Verifying OTP for:", phone, "with code:", otpValue);
 
             const otpData = await verifyOtp(phone, otpValue);
-            console.log("otpData", otpData);
 
             if (isLogin) {
                 await handleLogin(phone, navigate);
@@ -161,15 +159,13 @@ const [loading,setLoading]=useState(false)
             setLoading(false)
         }
     };
-    console.log("Phone received:", location?.state?.phone);
-    console.log("Send OTP to:", phone);
-    console.log("Verify OTP with:", otpValue);
+
 
     // Otp auto detection 
     const attemptOtpAutofill = async () => {
         if ('OTPCredential' in window) {
             try {
-                console.log("Starting OTP detection...");
+                
                 // Listen the SMS and get the OTP 
                 const abortController = new AbortController()
                 const timeout = setTimeout(() => abortController.abort(), 60000)
@@ -190,7 +186,7 @@ const [loading,setLoading]=useState(false)
                     setTimeout(() => {
                         const submitButton = document.querySelector('#otp-form button[type="submit"]');
                         if (submitButton) {
-                            console.log("Focusing submit button");
+                        
                             submitButton.focus();
                         } else {
                             console.warn("Submit button not found");
@@ -205,7 +201,6 @@ const [loading,setLoading]=useState(false)
             }
         } else {
             toast.error("OTP Autofill not supported in this browser.");
-            console.warn("OTP Credential API not supported in this browser.");
         }
     }
 
@@ -330,6 +325,7 @@ const [loading,setLoading]=useState(false)
                         onChange={(value) => {
                             setValue('otp', value);
                             setotpValue(value);
+                            setOtpError('');
                         }}
                         shouldAutoFocus={isLogin}
                         numInputs={6}
@@ -365,6 +361,9 @@ const [loading,setLoading]=useState(false)
                             autoComplete: "one-time-code",
                         }}
                     />
+                      {otpError && (
+            <p className="text-red-500 text-sm mt-1 ml-1">{otpError}</p>
+          )}
                 </div>
                 <ResendButton fullPhone={phone} setIsResending={setIsResending} />
 

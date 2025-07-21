@@ -1,7 +1,6 @@
 import React, { useState, useEffect,useRef,useCallback } from 'react';
 import { Switch } from "@headlessui/react";
 import { FaDirections, FaBoxOpen, FaUser, FaCheckCircle } from "react-icons/fa";
-import SmartDPScheduler from '../utils/DpSchedular';
 import BottomNav from '../components/Footer';
 import { MdLocationPin } from "react-icons/md";
 import { FaPhone } from "react-icons/fa6";
@@ -72,22 +71,40 @@ export default function DPHomePage() {
       fetchAvailability();
     }, [DpId]);
   
-    // ✅ Toggle Online/Offline
-  const handleToggleOnline = async (value) => {
+   const handleToggleOnline = async (value) => {
+  setIsOnline(value);
 
-      setIsOnline(value);
-      const { error } = await supabase
-        .from("delivery_partner")
-        .update({ available: value })
-        .eq("dp_id", DpId);
-  
-      if (error) {
-        toast.error("Could not update status");
-        setIsOnline(!value);
-      } else {
-        toast.success(`You are now ${value ? "Online" : "Offline"}`);
-      }
-    };
+  // Step 1: Update main availability
+  const { error: updateError } = await supabase
+    .from("delivery_partner")
+    .update({ available: value })
+    .eq("dp_id", DpId);
+
+  if (updateError) {
+    toast.error("Could not update status");
+    setIsOnline(!value);
+    return;
+  }
+
+  // Step 2: Insert into dp_logs table
+  const { error: logError } = await supabase
+    .from("dp_logs")
+    .insert([
+      {
+        dp_id: DpId,
+        status: value ? "on" : "off",
+        // timestamp will auto-insert with default CURRENT_TIMESTAMP
+      },
+    ]);
+
+  if (logError) {
+    console.error("Failed to log status change:", logError.message);
+    toast.error("Status changed, but log failed");
+  } else {
+    toast.success(`You are now ${value ? "Online" : "Offline"}`);
+  }
+};
+
   
     // ✅ Fetch Orders with Pagination
     const fetchOrders = useCallback(
@@ -176,7 +193,6 @@ export default function DPHomePage() {
 
     return (
       <div className="mx-auto    text-gray-800 ">
-        <SmartDPScheduler dpId={DpId} /> 
             <div className='max-w-2xl  mx-auto p-2  min-h-[85vh]   shadow-lg'>
                 {/* <Header title='Order' /> */}
 {dpProfile?.status === "blocked" ? (
