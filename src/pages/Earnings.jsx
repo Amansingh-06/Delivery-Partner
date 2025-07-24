@@ -18,6 +18,7 @@ import { supabase } from "../utils/Supabase"; // 👈 import your Supabase clien
 import { subscribeToRealtimeOrders } from "../utils/subscribeToRealtimeOrders"; // 👈 import your realtime util
 import { fetchDpRatings } from "../utils/fetchDPrating";
 import { fetchDpRatingStats } from "../utils/dpRatingStats";
+import { DELIVERY_EARNING_MAP } from "../constant/DPearning_constant";
 
 export default function Earnings() {
   const [orders, setOrders] = useState([]);
@@ -50,7 +51,7 @@ const dpId = dpProfile?.dp_id; // 👈 Replace with actual delivery partner ID
     const fetchDeliveredOrders = async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("order_id, created_ts, delivery_fee, status, dp_id")
+        .select("order_id, created_ts, delivery_fee, status, dp_id,delivery_type")
         .eq("status", "delivered")
         .eq("dp_id", dpId);
 
@@ -80,7 +81,9 @@ const dpId = dpProfile?.dp_id; // 👈 Replace with actual delivery partner ID
 
     orders.forEach((order) => {
       const date = new Date(order.created_ts);
-      const amount = order?.delivery_fee || 0;
+      const type = order?.delivery_type?.toLowerCase();
+const amount = DELIVERY_EARNING_MAP[type] || 0;
+
 console.log("Order Date:", date, "Amount:", amount);
       if (date.toDateString() === today.toDateString()) {
         tOrders++;
@@ -108,7 +111,9 @@ console.log("Order Date:", date, "Amount:", amount);
 
     orders.forEach((order) => {
       const date = new Date(order.created_ts);
-      const amount = order.delivery_fee || 0;
+    const type = order?.delivery_type?.toLowerCase();
+const amount = DELIVERY_EARNING_MAP[type] || 0;
+
       if (date >= start && date <= end) {
         earnings += amount;
         ordersCount++;

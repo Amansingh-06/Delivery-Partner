@@ -1,4 +1,5 @@
 import { supabase } from "./Supabase";
+import { fetchOrderById } from "./fetchOrderById";
 
 export function subscribeToRealtimeOrders(dpId, getStatus, setOrders) {
   if (!dpId) {
@@ -26,15 +27,34 @@ export function subscribeToRealtimeOrders(dpId, getStatus, setOrders) {
           return;
         }
 
-        const updatedOrder = payload.new;
 
-        setOrders((prev) => {
-          const index = prev.findIndex((o) => o.order_id === updatedOrder.order_id);
-          if (index === -1) return [...prev, updatedOrder];
-          const updated = [...prev];
-          updated[index] = { ...updated[index], ...updatedOrder };
-          return updated;
-        });
+const updatedOrder = payload.new;
+
+// Optional: statusFilter check logic (you can customize this if needed)
+const currentStatus = getStatus();
+
+if (
+  (currentStatus === "Pick up" && !['accepted', 'preparing', 'prepared'].includes(updatedOrder.status)) ||
+  (currentStatus === "With You" && updatedOrder.status !== "on the way") ||
+  (currentStatus === "Delivered" && updatedOrder.status !== "delivered")
+) {
+  // If order no longer matches filter, remove it
+  setOrders((prev) => prev.filter((o) => o.order_id !== updatedOrder.order_id));
+  return;
+}
+
+// ✅ Re-fetch full order details
+const { data: fullOrder } = await fetchOrderById(updatedOrder.order_id);
+if (!fullOrder) return;
+
+setOrders((prev) => {
+  const index = prev.findIndex((o) => o.order_id === fullOrder.order_id);
+  if (index === -1) return [...prev, fullOrder];
+  const updated = [...prev];
+  updated[index] = { ...updated[index], ...fullOrder };
+  return updated;
+});
+
       }
     )
     .subscribe();

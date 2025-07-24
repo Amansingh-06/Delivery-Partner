@@ -20,6 +20,7 @@ import { HiOutlineClipboardList } from "react-icons/hi";
 import { FaClock } from 'react-icons/fa';
 import { MdRestaurantMenu } from 'react-icons/md';
 import { FaMoneyBillWave } from 'react-icons/fa';
+import { MdFlashOn } from "react-icons/md";
 
 
 export default function DPHomePage() {
@@ -274,11 +275,11 @@ export default function DPHomePage() {
 
                       : orders?.length > 0 ? (
                         orders.map((order, index) => {
-                            const isLast = index === orders.length - 1;
+                            const isLast = index === orders?.length - 1;
                           return (
                               <>
                               <div
-                                key={order.order_id}
+                                key={order?.order_id}
                                 ref={isLast ? lastOrderRef : null}
                               className="bg-white w-full   rounded-xl md:p-6 p-2  shadow-md border-gray-300 mb-5  border-2"
                             >
@@ -291,7 +292,8 @@ export default function DPHomePage() {
                                                                              <div className="flex flex-col relative">
   <p className="text-black">
     <span className="text-gray-800 font-medium">Sr.no:</span> {order?.group_seq_no}
-  </p>
+                                          </p>
+      
 
   {/* Delay check condition */}
   {order?.eta && (() => {
@@ -312,6 +314,8 @@ export default function DPHomePage() {
 
 
                                       </div>
+                                                                          <p><span className="font-medium flex items-center  gap-1"><MdFlashOn /> Type: <span className="text-blue-600 font-medium">{order?.delivery_type}</span></span> </p>
+
                                     <p><span className="font-medium flex items-center  gap-1"><MdOutlinePendingActions /> Status: <span className="text-blue-600 font-medium">{order?.status}</span></span> </p>
                                     <p><span className="font-medium flex items-center gap-1"><FaStore /> Vendor: <span className="text-gray-600 text-sm">{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p>
                                     <p className="flex items-start gap-1">

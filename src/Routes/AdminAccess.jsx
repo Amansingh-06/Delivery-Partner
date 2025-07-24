@@ -51,6 +51,10 @@ export default function AdminProtectedRoute({ children, fallback = null }) {
         localStorage.setItem("admin_vendor_id", urlVendorId);
       }
 
+      if (session) {
+  setSession(session); // ✅ Add this line to store session in context
+}
+
       // ✅ Set Supabase session
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: token,

@@ -68,7 +68,7 @@ export const fetchOrdersByDP = async (dp_id, statusFilter, limit = 10, offset = 
 
     // Status Filters for group-based orders
     if (statusFilter === 'Pick up') {
-      query = query.in('status', ['accepted', 'preparing', 'prepared']);
+      query = query.in('status', ['pending ,accepted', 'preparing', 'prepared']);
     } else if (statusFilter === 'With You') {
       query = query.eq('status', 'on the way');
     }
