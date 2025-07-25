@@ -184,7 +184,7 @@ useEffect(() => {
     console.log("🧹 Unsubscribing from realtime...");
     subscription.unsubscribe();
   };
-}, [DpId]);
+}, [DpId,status]);
 
 
 
@@ -588,7 +588,7 @@ useEffect(() => {
 <p className="text-gray-600">
                   Please confirm that you have collected ₹
                   <span className='text-red-500'>
-                  ₹₹{(
+                  {(
   (selectedOrder?.discounted_amount ?? 0) +
   (selectedOrder?.wallet_balance_used ?? 0) +
   (selectedOrder?.tax_collected ?? 0) +

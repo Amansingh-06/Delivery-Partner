@@ -54,9 +54,9 @@ export default function OrderVendorInfo({ order, truncateLetters }) {
       {/* Fullscreen Modal Preview */}
       {showPreview && (
         <div className="inset-0 z-50 backdrop-blur-sm bg-black/30 fixed flex items-center justify-center">
-          <div className="relative">
+          <div className="relative border-2 border-red-50 p-8">
             <button
-              className="absolute z-50 top-2 right-2 text-white text-3xl"
+              className="absolute z-50 top-2 right-2 text-red text-3xl"
               onClick={() => setShowPreview(false)}
             >
               <IoMdClose />
