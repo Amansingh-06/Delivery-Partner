@@ -9,7 +9,7 @@ export function subscribeToRealtimeOrders(dpId, getStatus, setOrders) {
 
   console.log("📡 Subscribing to realtime orders for DP:", dpId);
 
-  // ✅ DP Channel (only for events where dp_id already matched)
+  // ✅ DP Channel (only for orders already assigned to this DP)
   const dpChannel = supabase.channel("realtime-orders-dp");
 
   dpChannel
@@ -19,47 +19,53 @@ export function subscribeToRealtimeOrders(dpId, getStatus, setOrders) {
       async (payload) => {
         console.log("📡 [DP Channel] Event:", payload);
 
-        if (payload.eventType === "DELETE") {
-          const deletedOrder = payload.old;
-          console.log("🗑️ [DP] Order deleted:", deletedOrder.order_id);
+        const updatedOrder = payload.new;
+        const deletedOrder = payload.old;
+        const currentStatus = getStatus();
 
+        console.log("🧭 Current Tab Status:", currentStatus);
+        console.log("📦 Updated Order Status:", updatedOrder?.status);
+
+        if (payload.eventType === "DELETE") {
+          console.log("🗑️ [DP] Order deleted:", deletedOrder.order_id);
           setOrders((prev) => prev.filter((o) => o.order_id !== deletedOrder.order_id));
           return;
         }
 
+        // Check if order matches current status tab
+        const statusMismatch =
+          (currentStatus === "Pick up" && !['pending', 'accepted', 'preparing', 'prepared'].includes(updatedOrder.status)) ||
+          (currentStatus === "With You" && updatedOrder.status !== "on the way") ||
+          (currentStatus === "Delivered" && updatedOrder.status !== "delivered");
 
-const updatedOrder = payload.new;
+        console.log("🔍 Status Mismatch:", statusMismatch);
 
-// Optional: statusFilter check logic (you can customize this if needed)
-const currentStatus = getStatus();
+        if (statusMismatch) {
+          console.log("⛔ Order removed due to status mismatch:", updatedOrder.order_id);
+          setOrders((prev) => prev.filter((o) => o.order_id !== updatedOrder.order_id));
+          return;
+        }
 
-if (
-  (currentStatus === "Pick up" && !['accepted', 'preparing', 'prepared'].includes(updatedOrder.status)) ||
-  (currentStatus === "With You" && updatedOrder.status !== "on the way") ||
-  (currentStatus === "Delivered" && updatedOrder.status !== "delivered")
-) {
-  // If order no longer matches filter, remove it
-  setOrders((prev) => prev.filter((o) => o.order_id !== updatedOrder.order_id));
-  return;
-}
+        console.log("🔄 Refetching full order:", updatedOrder.order_id);
+        const { data: fullOrder, success } = await fetchOrderById(updatedOrder.order_id);
+        if (!success || !fullOrder) {
+          console.warn("⚠️ Failed to fetch full order details");
+          return;
+        }
 
-// ✅ Re-fetch full order details
-const { data: fullOrder } = await fetchOrderById(updatedOrder.order_id);
-if (!fullOrder) return;
-
-setOrders((prev) => {
-  const index = prev.findIndex((o) => o.order_id === fullOrder.order_id);
-  if (index === -1) return [...prev, fullOrder];
-  const updated = [...prev];
-  updated[index] = { ...updated[index], ...fullOrder };
-  return updated;
-});
-
+        console.log("✅ Updating order in list:", fullOrder.order_id);
+        setOrders((prev) => {
+          const index = prev.findIndex((o) => o.order_id === fullOrder.order_id);
+          if (index === -1) return [...prev, fullOrder]; // new addition
+          const updated = [...prev];
+          updated[index] = fullOrder; // just replace that row
+          return updated;
+        });
       }
     )
     .subscribe();
 
-  // ✅ Broad Channel (watches all dp_id changes and deletions)
+  // ✅ Broad Channel (for assigned/unassigned)
   const broadChannel = supabase.channel("realtime-orders-dp-broad");
 
   broadChannel
@@ -69,15 +75,14 @@ setOrders((prev) => {
       async (payload) => {
         const oldDp = payload.old?.dp_id;
         const newDp = payload.new?.dp_id;
+        const deletedOrder = payload.old;
         const updatedOrder = payload.new;
 
-        console.log("📡 [Broad Channel] Event Received");
+        console.log("📡 [Broad Channel] Event:");
         console.log("   ▶️ oldDp:", oldDp);
         console.log("   ▶️ newDp:", newDp);
-        console.log("   ▶️ this dpId:", dpId);
 
         if (payload.eventType === "DELETE") {
-          const deletedOrder = payload.old;
           if (deletedOrder.dp_id === dpId) {
             console.log("🗑️ [Broad] Order deleted for this DP:", deletedOrder.order_id);
             setOrders((prev) => prev.filter((o) => o.order_id !== deletedOrder.order_id));
@@ -85,24 +90,24 @@ setOrders((prev) => {
           return;
         }
 
-        // ✅ If this DP is newly assigned
         if (newDp === dpId) {
-          console.log("🆕 [Broad] Order assigned to this DP");
+          console.log("🆕 [Broad] Order assigned to this DP:", updatedOrder.order_id);
+
+          const { data: fullOrder, success } = await fetchOrderById(updatedOrder.order_id);
+          if (!success || !fullOrder) return;
+
           setOrders((prev) => {
-            const index = prev.findIndex((o) => o.order_id === updatedOrder.order_id);
-            if (index === -1) return [...prev, updatedOrder];
+            const index = prev.findIndex((o) => o.order_id === fullOrder.order_id);
+            if (index === -1) return [...prev, fullOrder];
             const updated = [...prev];
-            updated[index] = { ...updated[index], ...updatedOrder };
+            updated[index] = fullOrder;
             return updated;
           });
         }
 
-        // ✅ If this DP is unassigned
         if (oldDp === dpId && newDp !== dpId) {
-          console.log("❌ [Broad] Order removed from this DP");
-          setOrders((prev) =>
-            prev.filter((o) => o.order_id !== payload.old.order_id)
-          );
+          console.log("❌ [Broad] Order unassigned from this DP:", deletedOrder.order_id);
+          setOrders((prev) => prev.filter((o) => o.order_id !== deletedOrder.order_id));
         }
       }
     )

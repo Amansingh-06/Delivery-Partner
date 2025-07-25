@@ -21,6 +21,8 @@ import { FaClock } from 'react-icons/fa';
 import { MdRestaurantMenu } from 'react-icons/md';
 import { FaMoneyBillWave } from 'react-icons/fa';
 import { MdFlashOn } from "react-icons/md";
+import OrderVendorInfo from '../components/VendorInfo';
+import { capitalize } from '../constant/constants';
 
 
 export default function DPHomePage() {
@@ -175,16 +177,15 @@ export default function DPHomePage() {
     );
   
     // ✅ Realtime Updates
- useEffect(() => {
+useEffect(() => {
   console.log("📡 Subscribing to realtime updates...");
-  
   const subscription = subscribeToRealtimeOrders(DpId, () => status, setOrders);
-
   return () => {
     console.log("🧹 Unsubscribing from realtime...");
-    subscription.unsubscribe(); // ✅ Now correctly unsubscribes both channels
+    subscription.unsubscribe();
   };
 }, [DpId]);
+
 
 
     console.log("📋 Current Orders:", orders.length);
@@ -314,14 +315,29 @@ export default function DPHomePage() {
 
 
                                       </div>
-                                                                          <p><span className="font-medium flex items-center  gap-1"><MdFlashOn /> Type: <span className="text-blue-600 font-medium">{order?.delivery_type}</span></span> </p>
+                                                                          <p><span className="font-medium flex items-center  gap-1"><MdFlashOn /> Type:   <span
+            className={` font-medium
+      ${
+        order?.delivery_type === "schedule"
+          ? "text-green-600"
+          : order?.delivery_type === "standard"
+          ? "text-yellow-500"
+          : order?.delivery_type === "rapid"
+          ? "text-red-500"
+          : "text-gray-500"
+      }`}
+          >
+            {capitalize(order?.delivery_type)}
+          </span></span> </p>
 
                                     <p><span className="font-medium flex items-center  gap-1"><MdOutlinePendingActions /> Status: <span className="text-blue-600 font-medium">{order?.status}</span></span> </p>
-                                    <p><span className="font-medium flex items-center gap-1"><FaStore /> Vendor: <span className="text-gray-600 text-sm">{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p>
+                                      {/* <p><span className="font-medium flex items-center gap-1"><FaStore /> Vendor: <span className="text-gray-600 text-sm">{truncateLetters(order?.vendor?.shop_name, 20)}</span></span> </p> */}
+                                      <OrderVendorInfo order={order} truncateLetters={truncateLetters} />
+
                                     <p className="flex items-start gap-1">
                           <FaRegAddressCard className="mt-[3.5px] shrink-0" />
                           <span className="font-medium">
-                            Vendor Add.: <span className="text-gray-600 text-sm">{order?.vendor?.street} {order?.vendor?.city}</span>
+                                          Vendor Add: <span className="text-gray-600 text-sm">{order?.vendor?.street} {order?.vendor?.city} {order?.vendor?.state } {order?.vendor?.pincode }</span>
                           </span>
                                       </p>
                                       <p><span className='font-medium flex  item-center gap-1'> <MdRestaurantMenu className='mt-1'/ > Items</span>
