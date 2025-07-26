@@ -178,13 +178,33 @@ export default function DPHomePage() {
   
     // ✅ Realtime Updates
 useEffect(() => {
-  console.log("📡 Subscribing to realtime updates...");
-  const subscription = subscribeToRealtimeOrders(DpId, () => status, setOrders);
-  return () => {
-    console.log("🧹 Unsubscribing from realtime...");
-    subscription.unsubscribe();
+  let subscription;
+
+  const startSubscription = () => {
+    console.log("📡 Starting DP Realtime Subscription...");
+    subscription = subscribeToRealtimeOrders(DpId, () => status, setOrders);
   };
-}, [DpId,status]);
+
+  startSubscription();
+
+  // ✅ Re-subscribe when tab becomes active again
+  const handleVisibility = () => {
+    if (document.visibilityState === "visible") {
+      console.log("🟢 Tab focused. Re-subscribing...");
+      subscription?.unsubscribe();
+      startSubscription();
+    }
+  };
+
+  document.addEventListener("visibilitychange", handleVisibility);
+
+  return () => {
+    console.log("🧹 Cleaning up...");
+    subscription?.unsubscribe();
+    document.removeEventListener("visibilitychange", handleVisibility);
+  };
+}, [DpId, status]);
+
 
 
 
