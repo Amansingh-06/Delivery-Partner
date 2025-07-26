@@ -520,7 +520,8 @@ useEffect(() => {
             <h3 className="text-lg font-bold text-gray-700">Enter OTP</h3>
             <input
               type="text"
-              value={otp}
+                  value={otp}
+                  inputMode='numeric'
               maxLength={6}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
               className={`w-full border ${otp.length > 0 && otp.length !== 6 ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 outline-none`}

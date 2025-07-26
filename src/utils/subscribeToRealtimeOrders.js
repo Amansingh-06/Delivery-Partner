@@ -9,63 +9,66 @@ export function subscribeToRealtimeOrders(dpId, getStatus, setOrders) {
 
   console.log("📡 Subscribing to realtime orders for DP:", dpId);
 
-  // ✅ DP Channel (only for orders already assigned to this DP)
+  // ✅ Helper to upsert order in list
+  const upsertOrder = (orders, newOrder) => {
+    const index = orders.findIndex((o) => o.order_id === newOrder.order_id);
+    if (index === -1) return [...orders, newOrder];
+    const updated = [...orders];
+    updated[index] = newOrder;
+    return updated;
+  };
+
+  // ✅ DP Channel — handles updates/deletes for already assigned orders
   const dpChannel = supabase.channel("realtime-orders-dp");
 
   dpChannel
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "orders", filter: `dp_id=eq.${dpId}` },
+      { event: "*", schema: "public", table: "orders" },
       async (payload) => {
-        console.log("📡 [DP Channel] Event:", payload);
+        const { eventType, new: updatedOrder, old: deletedOrder } = payload;
 
-        const updatedOrder = payload.new;
-        const deletedOrder = payload.old;
+        const order = eventType === "DELETE" ? deletedOrder : updatedOrder;
+        if (order?.dp_id !== dpId) return; // 🧠 Manual filter
+
         const currentStatus = getStatus();
+        console.log("📡 [DP Channel] Event:", eventType, order?.order_id);
+        console.log("🧭 Current Tab:", currentStatus);
+        console.log("📦 Order Status:", order?.status);
 
-        console.log("🧭 Current Tab Status:", currentStatus);
-        console.log("📦 Updated Order Status:", updatedOrder?.status);
-
-        if (payload.eventType === "DELETE") {
-          console.log("🗑️ [DP] Order deleted:", deletedOrder.order_id);
-          setOrders((prev) => prev.filter((o) => o.order_id !== deletedOrder.order_id));
+        if (eventType === "DELETE") {
+          console.log("🗑️ Order deleted:", order.order_id);
+          setOrders((prev) => prev.filter((o) => o.order_id !== order.order_id));
           return;
         }
 
-        // Check if order matches current status tab
+        // ✅ Status Mismatch check
         const statusMismatch =
           (currentStatus === "Pick up" && !['pending', 'accepted', 'preparing', 'prepared'].includes(updatedOrder.status)) ||
           (currentStatus === "With You" && updatedOrder.status !== "on the way") ||
           (currentStatus === "Delivered" && updatedOrder.status !== "delivered");
 
-        console.log("🔍 Status Mismatch:", statusMismatch);
-
         if (statusMismatch) {
-          console.log("⛔ Order removed due to status mismatch:", updatedOrder.order_id);
+          console.log("⛔ Status mismatch, removing:", updatedOrder.order_id);
           setOrders((prev) => prev.filter((o) => o.order_id !== updatedOrder.order_id));
           return;
         }
 
-        console.log("🔄 Refetching full order:", updatedOrder.order_id);
+        // ✅ Fetch full order and upsert
+        console.log("🔄 Refetching order:", updatedOrder.order_id);
         const { data: fullOrder, success } = await fetchOrderById(updatedOrder.order_id);
         if (!success || !fullOrder) {
-          console.warn("⚠️ Failed to fetch full order details");
+          console.warn("⚠️ Failed to fetch order:", updatedOrder.order_id);
           return;
         }
 
-        console.log("✅ Updating order in list:", fullOrder.order_id);
-        setOrders((prev) => {
-          const index = prev.findIndex((o) => o.order_id === fullOrder.order_id);
-          if (index === -1) return [...prev, fullOrder]; // new addition
-          const updated = [...prev];
-          updated[index] = fullOrder; // just replace that row
-          return updated;
-        });
+        console.log("✅ Order updated:", fullOrder.order_id);
+        setOrders((prev) => upsertOrder(prev, fullOrder));
       }
     )
     .subscribe();
 
-  // ✅ Broad Channel (for assigned/unassigned)
+  // ✅ Broad Channel — handles assignment/unassignment of orders
   const broadChannel = supabase.channel("realtime-orders-dp-broad");
 
   broadChannel
@@ -73,41 +76,26 @@ export function subscribeToRealtimeOrders(dpId, getStatus, setOrders) {
       "postgres_changes",
       { event: "*", schema: "public", table: "orders" },
       async (payload) => {
-        const oldDp = payload.old?.dp_id;
-        const newDp = payload.new?.dp_id;
-        const deletedOrder = payload.old;
-        const updatedOrder = payload.new;
+        const { eventType, new: updatedOrder, old: deletedOrder } = payload;
+        const oldDp = deletedOrder?.dp_id;
+        const newDp = updatedOrder?.dp_id;
 
-        console.log("📡 [Broad Channel] Event:");
-        console.log("   ▶️ oldDp:", oldDp);
-        console.log("   ▶️ newDp:", newDp);
+        console.log("📡 [Broad Channel] Event:", eventType);
+        console.log("   ▶️ oldDp:", oldDp, "→ newDp:", newDp);
 
-        if (payload.eventType === "DELETE") {
-          if (deletedOrder.dp_id === dpId) {
-            console.log("🗑️ [Broad] Order deleted for this DP:", deletedOrder.order_id);
-            setOrders((prev) => prev.filter((o) => o.order_id !== deletedOrder.order_id));
-          }
+        // ❌ Unassignment
+        if (eventType === "DELETE" || (oldDp === dpId && newDp !== dpId)) {
+          console.log("❌ Order unassigned or deleted:", deletedOrder?.order_id);
+          setOrders((prev) => prev.filter((o) => o.order_id !== deletedOrder.order_id));
           return;
         }
 
+        // 🆕 Assignment to this DP
         if (newDp === dpId) {
-          console.log("🆕 [Broad] Order assigned to this DP:", updatedOrder.order_id);
-
+          console.log("🆕 Order assigned to this DP:", updatedOrder.order_id);
           const { data: fullOrder, success } = await fetchOrderById(updatedOrder.order_id);
           if (!success || !fullOrder) return;
-
-          setOrders((prev) => {
-            const index = prev.findIndex((o) => o.order_id === fullOrder.order_id);
-            if (index === -1) return [...prev, fullOrder];
-            const updated = [...prev];
-            updated[index] = fullOrder;
-            return updated;
-          });
-        }
-
-        if (oldDp === dpId && newDp !== dpId) {
-          console.log("❌ [Broad] Order unassigned from this DP:", deletedOrder.order_id);
-          setOrders((prev) => prev.filter((o) => o.order_id !== deletedOrder.order_id));
+          setOrders((prev) => upsertOrder(prev, fullOrder));
         }
       }
     )
