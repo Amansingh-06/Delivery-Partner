@@ -23,6 +23,10 @@ import { FaMoneyBillWave } from 'react-icons/fa';
 import { MdFlashOn } from "react-icons/md";
 import OrderVendorInfo from '../components/VendorInfo';
 import { capitalize } from '../constant/constants';
+import { FaRegClock } from "react-icons/fa6";
+import { RiShieldCheckLine } from "react-icons/ri";
+
+
 
 
 export default function DPHomePage() {
@@ -178,20 +182,20 @@ export default function DPHomePage() {
   
     // ✅ Realtime Updates
 useEffect(() => {
-  let subscription;
+  const subscriptionRef = { current: null };
 
   const startSubscription = () => {
     console.log("📡 Starting DP Realtime Subscription...");
-    subscription = subscribeToRealtimeOrders(DpId, () => status, setOrders);
+    const { unsubscribe } = subscribeToRealtimeOrders(DpId, () => status, setOrders);
+    subscriptionRef.current = { unsubscribe };
   };
 
   startSubscription();
 
-  // ✅ Re-subscribe when tab becomes active again
   const handleVisibility = () => {
     if (document.visibilityState === "visible") {
       console.log("🟢 Tab focused. Re-subscribing...");
-      subscription?.unsubscribe();
+      subscriptionRef.current?.unsubscribe?.();
       startSubscription();
     }
   };
@@ -200,10 +204,11 @@ useEffect(() => {
 
   return () => {
     console.log("🧹 Cleaning up...");
-    subscription?.unsubscribe();
+    subscriptionRef.current?.unsubscribe?.();
     document.removeEventListener("visibilitychange", handleVisibility);
   };
 }, [DpId, status]);
+
 
 
 
@@ -360,18 +365,22 @@ useEffect(() => {
                                           Vendor Add: <span className="text-gray-600 text-sm">{order?.vendor?.street} {order?.vendor?.city} {order?.vendor?.state } {order?.vendor?.pincode }</span>
                           </span>
                                       </p>
-                                      <p><span className='font-medium flex  item-center gap-1'> <MdRestaurantMenu className='mt-1'/ > Items</span>
-                                        {order?.order_item?.map((item, index) => (
-                                          <span key={item.order_item_id} className='text-gray-600 text-sm'>
-                                            {item?.quantity} x {item?.items?.item_name}
-                                            {index !== order?.order_item?.length - 1 && ', '}
-                                          </span>
-                                        ))}
+                                    <p className="flex flex-wrap items-center gap-1 ">
+  <span className="flex items-center gap-1 font-medium">
+    <MdRestaurantMenu className="text-lg" />
+    Items:
+  </span>
+  {order?.order_item?.map((item, index) => (
+    <span key={item.order_item_id} className="text-gray-600 text-sm">
+      {item?.quantity} x {item?.items?.item_name}
+      {index !== order?.order_item?.length - 1 && ','}
+    </span>
+  ))}
+</p>
 
-                                      </p>
                                       <p>
                                         <p className="flex items-center gap-2">
-                                          <span className='flex items-center gap-1'><FaUser /></span>
+                                          <span className='flex items-center gap-1'><FaUser className='text-lg' /></span>
   
   <img
     src={
@@ -389,8 +398,8 @@ useEffect(() => {
                         
                                   <div className='flex justify-between items-center w-full mt-2 '>
                                     {order?.status?.toLowerCase() !== "on the way" && (
-                                      <p className="text-lg font-medium">
-                                        OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span>
+                                      <p className=" font-medium flex items-center gap-1">
+                                      <RiShieldCheckLine className='text-lg'/>  OTP: <span className="text-blue-600 font-bold">{order?.dp_otp || "N/A"}</span>
                                       </p>
                                     )}
                         
@@ -409,7 +418,8 @@ useEffect(() => {
                                       <FaDirections />
                                       {order?.status?.toLowerCase() === "on the way" ? "Go to Customer" : "Go to Vendor"}
                                     </button>
-                                  </div>
+                                    </div>
+                                    <p className='flex items-center gap-1 mt-1.5 '><FaRegClock className='text-lg'/> ETA: <span className='text-gray-600 font-medium'>{order?.eta ? new Date(order?.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "N/A"}</span></p>
                                 </div>
                               )}
                         

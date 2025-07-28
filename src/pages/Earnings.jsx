@@ -27,6 +27,7 @@ export default function Earnings() {
   const [thisWeek, setThisWeek] = useState({ total_orders: 0, total_amount: 0 });
   const [thisMonth, setThisMonth] = useState({ total_orders: 0, total_amount: 0 });
   const [selectedStats, setSelectedStats] = useState({ earnings: 0, orders: 0 });
+  const [cancelledStats, setCancelledStats] = useState({ count: 0, lost_amount: 0 });
   const [showCalendar, setShowCalendar] = useState(false);
   const { dpProfile } = useAuth(); // 👈 Get delivery partner profile from context
     const [ratings, setRatings] = useState([]);
@@ -52,11 +53,10 @@ const dpId = dpProfile?.dp_id; // 👈 Replace with actual delivery partner ID
       const { data, error } = await supabase
         .from("orders")
         .select("order_id, created_ts, delivery_fee, status, dp_id,delivery_type")
-        .eq("status", "delivered")
+        .in("status", ["delivered","cancelled"])
         .eq("dp_id", dpId);
 
       if (error) {
-        console.error("Error fetching orders:", error.message);
         return;
       }
 
@@ -84,7 +84,6 @@ const dpId = dpProfile?.dp_id; // 👈 Replace with actual delivery partner ID
       const type = order?.delivery_type?.toLowerCase();
 const amount = DELIVERY_EARNING_MAP[type] || 0;
 
-console.log("Order Date:", date, "Amount:", amount);
       if (date.toDateString() === today.toDateString()) {
         tOrders++;
         tAmount += amount;
@@ -122,10 +121,50 @@ const amount = DELIVERY_EARNING_MAP[type] || 0;
 
     setSelectedStats({ earnings, orders: ordersCount });
   }, [orders, dateRange]);
+useEffect(() => {
+  const [start, end] = dateRange;
+  let cancelledCount = 0;
+  let lostAmount = 0;
+
+  console.log("📅 Selected Date Range:", {
+    start: start.toISOString(),
+    end: end.toISOString()
+  });
+
+  orders.forEach((order, index) => {
+    const date = new Date(order.created_ts);
+    const isCancelled = order?.status === "cancelled";
+    const inRange = date >= start && date <= end;
+    const type = order?.delivery_type?.toLowerCase();
+    const amount = DELIVERY_EARNING_MAP[type] || 0;
+
+    if (isCancelled) {
+      console.log(`🔎 Order ${index + 1}`, {
+        created_ts: order.created_ts,
+        parsedDate: date.toISOString(),
+        inRange,
+        type,
+        amount
+      });
+
+      if (inRange) {
+        cancelledCount++;
+        lostAmount += amount;
+      }
+    }
+  });
+
+  console.log("✅ Final Cancelled Stats", {
+    cancelledCount,
+    lostAmount
+  });
+
+  setCancelledStats({ count: cancelledCount, lost_amount: lostAmount });
+}, [orders, dateRange]);
+
 
 
   //rating
-console.log("dpId",dpId,dpProfile?.status)
     useEffect(() => {
     if (dpId && dpProfile?.status === "verified") {
       // Reset on vendor change
@@ -144,7 +183,6 @@ console.log("dpId",dpId,dpProfile?.status)
 const loadMoreRatings = async () => {
   
   const { success, data } = await fetchDpRatings(dpId, page, LIMIT);
-  console.log("🚀 fetchDpRatings response:", { success, data });
 
   if (success && Array.isArray(data)) {
     // ✅ Remove duplicate reviews using r_id
@@ -195,7 +233,6 @@ const loadMoreRatings = async () => {
     }
   }, [dpId, dpProfile?.status]);
 
-  console.log("rating", ratings);
 
   return (
     <div className="min-h-[89.5vh]   max-w-2xl mx-auto space-y-6">
@@ -265,7 +302,7 @@ const loadMoreRatings = async () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 <InsightCard label="Earnings" value={`₹${selectedStats.earnings}`} />
                 <InsightCard label="Orders" value={selectedStats.orders} />
-                <InsightCard label="Rejected" value={`₹0 (0 orders)`} />
+                <InsightCard label="Rejected" value={`₹${cancelledStats.lost_amount} (${cancelledStats.count} orders)`} />
               </div>
             </section>
 
@@ -279,7 +316,6 @@ const loadMoreRatings = async () => {
   Your store is rated ⭐ {ratingStats.averageRating} by {ratingStats.totalCustomers} customer
   {ratingStats.totalCustomers !== 1 ? "s" : ""}
                     </p>
-                    {console.log("ratingStats",ratingStats)}
 
                     </div>
 
@@ -305,7 +341,6 @@ const loadMoreRatings = async () => {
               />
               <div>
                 <h3 className="font-semibold text-gray-800">
-                  {console.log('rating', rating)}
                   {rating?.user?.name}
                 </h3>
 

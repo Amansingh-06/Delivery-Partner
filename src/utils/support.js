@@ -1,31 +1,32 @@
 import { supabase } from './Supabase';
 
+
+// import { supabase } from './supabaseClient';
+
 export const connectSupport = async () => {
   try {
     const { data, error } = await supabase
       .from('support_team')
-      .select('user_id, user(mobile_number)')  // ✅ Join with user table to get mobile number
+      .select('user_id, user(mobile_number)')  // Join with user table to get mobile number
       .eq('status', 'available')
-      .limit(1)
-      .single();
+      .limit(1);  // ❌ remove `.single()`
 
     if (error) {
-      console.error("Error fetching support:", error);
       return { success: false, message: error.message, error };
     }
 
-    console.log('✅ Support Team Data:', data);
+    const supportMember = data?.[0];  // ✅ Get first item from array
 
-    if (data?.user?.mobile_number) {
+    if (supportMember?.user?.mobile_number) {
       // ✅ Redirect to WhatsApp with the mobile number
-      window.location.href = `https://wa.me/${data.user.mobile_number}`;
+      window.location.href = `https://wa.me/${supportMember.user.mobile_number}`;
       return { success: true };
     } else {
-      return { success: false, message: "No available support team member right now." };
+      return { success: false, message: "No one is available from the support team right now,Try later." };
     }
 
   } catch (err) {
-    console.error("Unexpected error:", err);
     return { success: false, message: "Something went wrong.", error: err };
   }
 };
+

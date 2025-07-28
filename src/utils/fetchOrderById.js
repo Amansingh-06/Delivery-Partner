@@ -1,8 +1,8 @@
 import { supabase } from "./Supabase";
 
-export const fetchOrderById = async (orderId) => {
+export const fetchOrderById = async (orderId, dpId = null) => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from("orders")
       .select(`
         *,
@@ -15,8 +15,14 @@ export const fetchOrderById = async (orderId) => {
           items:item_id (*)
         )
       `)
-      .eq("order_id", orderId)
-      .single();
+      .eq("order_id", orderId);
+
+    // ✅ If dpId is provided, apply filter
+    if (dpId) {
+      query = query.eq("dp_id", dpId);
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
       console.error("Error fetching order by ID:", error.message);
